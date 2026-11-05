@@ -1,0 +1,84 @@
+import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
+import withSerwistInit from "@serwist/next";
+
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
+// Serwist: sinh /sw.js ở production, tắt ở dev để tránh cache làm khó debug.
+// swSrc là source worker, swDest là file serve từ public.
+const withSerwist = withSerwistInit({
+  swSrc: "src/app/sw.ts",
+  swDest: "public/sw.js",
+  disable: process.env.NODE_ENV === "development",
+  cacheOnNavigation: true,
+  reloadOnOnline: true,
+});
+
+const nextConfig: NextConfig = {
+  output: "standalone",
+  reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+    ],
+    // Logo đã có bản resize sẵn (64/128/256) + WebP; Next tự chọn srcset
+    // và transcode AVIF/WebP, cache 1 năm cho file immutable (_next/static).
+    formats: ["image/avif", "image/webp"],
+    qualities: [75, 85],
+    deviceSizes: [64, 128, 256, 384],
+    imageSizes: [32, 48, 64, 96, 128, 256],
+    minimumCacheTTL: 31536000,
+  },
+  async headers() {
+    return [
+      {
+        // Logo/favicon trong public/: cache lâu, revalidate ngầm
+        source: "/images/logos/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      {
+        source: "/favicon.ico",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400, stale-while-revalidate=86400",
+          },
+        ],
+      },
+      {
+        source: "/apple-touch-icon.png",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400, stale-while-revalidate=86400",
+          },
+        ],
+      },
+    ];
+  },
+  async rewrites() {
+    // Browser calls bake NEXT_PUBLIC_API_URL at build time; server-side
+    // rewrites inside compose must reach the gateway via docker DNS.
+    const apiUrl =
+      process.env.GATEWAY_INTERNAL_URL ||
+      process.env.INTERNAL_API_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      "http://localhost:8080/api/v1";
+    return [
+      {
+        source: "/api/v1/:path*",
+        destination: `${apiUrl}/:path*`,
+      },
+    ];
+  },
+};
+
+export default withSerwist(withNextIntl(nextConfig));

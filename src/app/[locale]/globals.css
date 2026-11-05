@@ -1,0 +1,165 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* ==========================================================================
+     QUIZLET DESIGN TOKENS
+     ========================================================================== */
+
+  /* 1. Brand Primary & Accent Indigo */
+  --quizlet-indigo: #4255ff;
+  --quizlet-indigo-hover: #3646db;
+  --quizlet-indigo-light: #eceeff;
+  --quizlet-indigo-border: #d3ddff;
+  --quizlet-deep-navy: #0a092d;
+
+  /* 2. Primary Slate & Typography Colors */
+  --quizlet-slate: #2e3856;
+  --quizlet-text-primary: #2e3856;
+  --quizlet-text-secondary: #586380;
+  --quizlet-text-muted: #939bb4;
+
+  /* 3. Canvas Backgrounds & Elevated Surfaces */
+  --quizlet-bg-canvas: #f6f7fb;
+  --quizlet-surface: #ffffff;
+  --quizlet-surface-hover: #f9fafc;
+
+  /* 4. Borders & Dividers */
+  --quizlet-border: #d9dde8;
+  --quizlet-border-light: #edeff4;
+  --quizlet-border-hover: #939bb4;
+  --quizlet-border-focus: #4255ff;
+
+  /* 5. Feedback Colors (Mastered, Learning, Familiar, Warning) */
+  --quizlet-green: #23b26d;
+  --quizlet-green-hover: #1da060;
+  --quizlet-green-bg: #eefbf3;
+  --quizlet-green-border: #a7f3d0;
+
+  --quizlet-coral: #ff725b;
+  --quizlet-coral-hover: #e65e47;
+  --quizlet-coral-bg: #fff0ee;
+  --quizlet-coral-border: #fecaca;
+
+  --quizlet-gold: #ffcd1f;
+  --quizlet-gold-hover: #e5b719;
+
+  --quizlet-warning: #ff983d;
+  --quizlet-warning-bg: #fff8ed;
+  --quizlet-warning-border: #fed7aa;
+
+  /* 6. Shadows & Elevations */
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --shadow-card-hover: 0 8px 24px rgba(46, 56, 86, 0.08), 0 2px 6px rgba(46, 56, 86, 0.04);
+  --shadow-flashcard-3d: 0 8px 30px rgba(0, 0, 0, 0.08);
+  --shadow-dropdown: 0 12px 32px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
+
+  /* 7. Border Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+}
+
+/* ==========================================================================
+   BASE STYLES
+   ========================================================================== */
+
+body {
+  background-color: var(--quizlet-bg-canvas);
+  color: var(--quizlet-text-primary);
+  font-family: "Hurme Geometric Sans No2", "Hurme Geometric Sans", var(--font-hurme), var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3 {
+  font-family: "Hurme Geometric Sans No2", "Hurme Geometric Sans", var(--font-hurme), var(--font-inter), -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+::selection {
+  background-color: var(--quizlet-indigo-light);
+  color: var(--quizlet-indigo);
+}
+
+/* ==========================================================================
+   CSS 3D FLIP CARD MECHANICS & UTILITIES
+   ========================================================================== */
+
+/* Perspective Container */
+.perspective-1000 {
+  perspective: 1000px;
+  -webkit-perspective: 1000px;
+}
+
+/* 3D Context Preservation */
+.transform-style-3d {
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+}
+
+/* Backface Culling */
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* 180-Degree Rotation for Back Face or Flipped State */
+.rotate-y-180 {
+  transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
+}
+
+.rotate-y-0 {
+  transform: rotateY(0deg);
+  -webkit-transform: rotateY(0deg);
+}
+
+/* Smooth 3D Flip Transition Engine */
+.transition-flip {
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-transition: -webkit-transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+/* Card Face Architecture */
+.card-face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: var(--radius-xl, 20px);
+  background-color: var(--quizlet-surface, #ffffff);
+  box-shadow: var(--shadow-flashcard-3d);
+  border: 1px solid var(--quizlet-border-light, #edeff4);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2rem;
+  user-select: none;
+}
+
+/* Safari Z-Fighting Stabilizers */
+.card-face-front {
+  transform: translate3d(0, 0, 1px);
+  -webkit-transform: translate3d(0, 0, 1px);
+}
+
+.card-face-back {
+  transform: rotateY(180deg) translate3d(0, 0, 1px);
+  -webkit-transform: rotateY(180deg) translate3d(0, 0, 1px);
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .transition-flip,
+  .flashcard-inner {
+    transition: transform 0.01ms !important;
+  }
+}
