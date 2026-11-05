@@ -21,7 +21,7 @@ export function AuthTopBar() {
         className="inline-flex items-center gap-2 group transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quizlet-indigo rounded-lg"
         aria-label={t("brandHome")}
       >
-        <BrandLogo priority height={30} />
+        <BrandLogo priority height={36} />
       </Link>
 
       {/* Language switcher — trang đăng nhập không dùng Header chung */}

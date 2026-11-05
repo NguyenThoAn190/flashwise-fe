@@ -91,7 +91,7 @@ export function Header({ onSearch, className }: HeaderProps) {
               className="flex items-center shrink-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quizlet-indigo rounded-lg select-none"
               aria-label={t("brandHome")}
             >
-              <BrandLogo variant="full" priority height={32} />
+              <BrandLogo variant="full" priority height={38} />
             </Link>
 
             {/* Desktop Navigation Links */}
@@ -102,16 +102,25 @@ export function Header({ onSearch, className }: HeaderProps) {
               >
                 {t("home")}
               </Link>
-              {/* Công cụ học: chỉ liệt kê thứ app đã có, món chưa có ghi "Sắp có" */}
-              <StudyToolsMenu />
-              {/* Thư viện chỉ hiện khi đã đăng nhập — menu công khai không có */}
+              {/* Công cụ học chỉ hiện khi chưa đăng nhập */}
+              {!isAuthenticated ? <StudyToolsMenu /> : null}
+              {/* Thư viện + Tiến độ chỉ hiện khi đã đăng nhập — menu công khai không có */}
               {isAuthenticated ? (
-                <Link
-                  href="/progress"
-                  className="h-9 inline-flex items-center justify-center px-3 rounded-lg text-sm font-semibold leading-5 whitespace-nowrap hover:text-quizlet-indigo hover:bg-quizlet-canvas transition-colors"
-                >
-                  {t("library")}
-                </Link>
+                <>
+                  <Link
+                    href="/library"
+                    className="h-9 inline-flex items-center justify-center px-3 rounded-lg text-sm font-semibold leading-5 whitespace-nowrap hover:text-quizlet-indigo hover:bg-quizlet-canvas transition-colors"
+                  >
+                    {t("library")}
+                  </Link>
+                  <Link
+                    href="/progress"
+                    className="h-9 inline-flex items-center justify-center px-3 rounded-lg text-sm font-semibold leading-5 whitespace-nowrap hover:text-quizlet-indigo hover:bg-quizlet-canvas transition-colors"
+                    data-testid="header-progress-link"
+                  >
+                    {t("progress")}
+                  </Link>
+                </>
               ) : null}
             </nav>
           </div>
@@ -274,15 +283,17 @@ export function Header({ onSearch, className }: HeaderProps) {
               </Dropdown>
             ) : (
               <div className="flex items-center gap-1">
-                <Link href="/login">
-                  <Button size="sm" variant="ghost" className="h-9 px-3 text-sm font-semibold leading-5 whitespace-nowrap">
-                    {t("login")}
-                  </Button>
+                <Link
+                  href="/login"
+                  className="h-9 px-3 text-sm font-semibold leading-5 whitespace-nowrap inline-flex items-center justify-center select-none rounded-lg gap-1.5 bg-transparent text-quizlet-slate border border-transparent hover:bg-quizlet-canvas hover:text-quizlet-indigo active:bg-quizlet-border-light transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-quizlet-indigo focus-visible:ring-offset-2"
+                >
+                  {t("login")}
                 </Link>
-                <Link href="/signup">
-                  <Button size="sm" variant="primary" className="h-9 px-3 text-sm font-semibold leading-5 whitespace-nowrap">
-                    {t("signup")}
-                  </Button>
+                <Link
+                  href="/signup"
+                  className="h-9 px-3 text-sm font-semibold leading-5 whitespace-nowrap inline-flex items-center justify-center select-none rounded-lg gap-1.5 bg-quizlet-indigo text-white hover:bg-quizlet-indigo-hover shadow-sm border border-transparent transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-quizlet-indigo focus-visible:ring-offset-2 active:scale-[0.98]"
+                >
+                  {t("signup")}
                 </Link>
               </div>
             )}

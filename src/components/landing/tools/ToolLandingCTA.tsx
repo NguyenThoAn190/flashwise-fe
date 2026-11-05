@@ -3,7 +3,6 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowRight, Flame, ShieldCheck, Zap } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import type { ToolSlug } from "./toolLandingData";
 import { TOOL_APP_HREF, getToolCopy, isToolAvailable } from "./toolLandingData";
 
@@ -26,33 +25,20 @@ export function ToolLandingCTA({ locale, slug }: { locale: string; slug: ToolSlu
             {available ? copy.heroSubtitle : copy.howSubtitle}
           </p>
           <div className="flex flex-wrap gap-3">
-            {appHref ? (
-              <Link href={appHref}>
-                <Button
-                  size="md"
-                  variant="primary"
-                  rightIcon={<ArrowRight className="w-4 h-4" />}
-                  data-testid={`tool-cta-primary-${slug}`}
-                >
-                  {copy.primaryCta}
-                </Button>
-              </Link>
-            ) : (
-              <Link href="/signup">
-                <Button
-                  size="md"
-                  variant="primary"
-                  rightIcon={<ArrowRight className="w-4 h-4" />}
-                  data-testid={`tool-cta-primary-${slug}`}
-                >
-                  {copy.primaryCta}
-                </Button>
-              </Link>
-            )}
-            <Link href="/set/create">
-              <Button size="md" variant="secondary" data-testid={`tool-cta-secondary-${slug}`}>
-                {copy.secondaryCta}
-              </Button>
+            <Link
+              href={appHref ?? "/signup"}
+              data-testid={`tool-cta-primary-${slug}`}
+              className="inline-flex items-center justify-center select-none font-semibold transition-all duration-200 outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] px-4 py-2.5 text-sm rounded-xl gap-2 bg-quizlet-indigo text-white hover:bg-quizlet-indigo-hover active:bg-quizlet-indigo-hover shadow-sm hover:shadow border border-transparent focus-visible:ring-quizlet-indigo"
+            >
+              {copy.primaryCta}
+              <ArrowRight className="w-4 h-4" aria-hidden="true" />
+            </Link>
+            <Link
+              href="/set/create"
+              data-testid={`tool-cta-secondary-${slug}`}
+              className="inline-flex items-center justify-center select-none font-semibold transition-all duration-200 outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] px-4 py-2.5 text-sm rounded-xl gap-2 bg-white text-quizlet-slate border-2 border-quizlet-border hover:bg-quizlet-canvas hover:border-quizlet-border-hover active:bg-quizlet-border-light focus-visible:ring-quizlet-border-hover"
+            >
+              {copy.secondaryCta}
             </Link>
           </div>
         </div>

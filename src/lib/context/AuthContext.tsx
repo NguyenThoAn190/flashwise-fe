@@ -44,11 +44,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Optimistically hydrate user from localStorage cache if token is present
-  const [user, setUser] = useState<UserProfile | null>(() => {
-    if (typeof window === "undefined") return null;
-    return hasAccessToken() ? getCachedUser<UserProfile>() : null;
-  });
+  // Luôn khởi tạo null để SSR và lần render đầu ở client giống nhau,
+  // tránh hydration mismatch. Session sẽ được khôi phục trong useEffect.
+  const [user, setUser] = useState<UserProfile | null>(null);
 
   // Loading state remains true until initial session restoration completes
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -57,11 +55,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   /**
    * Session Restoration on Initial App Mount
+   * NOTE: Khởi tạo user = null để SSR và lần render đầu ở client khớp nhau.
+   * Cache chỉ được đọc trong useEffect (sau hydration) nên không gây mismatch.
    */
   useEffect(() => {
     let isMounted = true;
 
     async function restoreSession() {
+      // Optimistic: đọc cache sau khi đã mount (không ảnh hưởng SSR/hydration)
+      try {
+        if (hasAccessToken()) {
+          const cached = getCachedUser<UserProfile>();
+          if (cached && isMounted) setUser(cached);
+        }
+      } catch {
+        // Bỏ qua lỗi đọc cache
+      }
+
       // 1. If no access token exists, mark loading false and clear user
       if (!hasAccessToken()) {
         if (isMounted) {

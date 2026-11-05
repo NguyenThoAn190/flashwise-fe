@@ -3,9 +3,41 @@
  * Synchronizes JWT access and refresh tokens between LocalStorage and Cookies.
  */
 
-export const ACCESS_TOKEN_KEY = "quizlet_access_token";
-export const REFRESH_TOKEN_KEY = "quizlet_refresh_token";
-export const USER_CACHE_KEY = "quizlet_cached_user";
+export const ACCESS_TOKEN_KEY = "flashwise_access_token";
+export const REFRESH_TOKEN_KEY = "flashwise_refresh_token";
+export const USER_CACHE_KEY = "flashwise_cached_user";
+
+// Legacy keys (quizlet_*) — kept for one-way migration only so users with an
+// existing session are not logged out after the rename. New code must always
+// write the flashwise_* keys above.
+const LEGACY_ACCESS_TOKEN_KEY = "quizlet_access_token";
+const LEGACY_REFRESH_TOKEN_KEY = "quizlet_refresh_token";
+const LEGACY_USER_CACHE_KEY = "quizlet_cached_user";
+
+function migrateLegacyKey(newKey: string, legacyKey: string): string | null {
+  if (!isBrowser) return null;
+  try {
+    const existing = localStorage.getItem(newKey);
+    if (existing) return existing;
+    const legacy = localStorage.getItem(legacyKey);
+    if (legacy) {
+      try {
+        localStorage.setItem(newKey, legacy);
+      } catch {
+        // Ignore quota errors — caller still gets the legacy value.
+      }
+      try {
+        localStorage.removeItem(legacyKey);
+      } catch {
+        // Ignore cleanup errors.
+      }
+      return legacy;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
 
 const isBrowser = typeof window !== "undefined" && typeof document !== "undefined";
 
@@ -49,9 +81,11 @@ export function deleteCookie(name: string): void {
 export function getAccessToken(): string | null {
   if (!isBrowser) return null;
   try {
+    const migrated = migrateLegacyKey(ACCESS_TOKEN_KEY, LEGACY_ACCESS_TOKEN_KEY);
+    if (migrated) return migrated;
     const local = localStorage.getItem(ACCESS_TOKEN_KEY);
     if (local) return local;
-    const cookie = getCookie(ACCESS_TOKEN_KEY);
+    const cookie = getCookie(ACCESS_TOKEN_KEY) ?? getCookie(LEGACY_ACCESS_TOKEN_KEY);
     if (cookie) {
       try {
         localStorage.setItem(ACCESS_TOKEN_KEY, cookie);
@@ -61,7 +95,7 @@ export function getAccessToken(): string | null {
       return cookie;
     }
   } catch {
-    return getCookie(ACCESS_TOKEN_KEY);
+    return getCookie(ACCESS_TOKEN_KEY) ?? getCookie(LEGACY_ACCESS_TOKEN_KEY);
   }
   return null;
 }
@@ -69,9 +103,11 @@ export function getAccessToken(): string | null {
 export function getRefreshToken(): string | null {
   if (!isBrowser) return null;
   try {
+    const migrated = migrateLegacyKey(REFRESH_TOKEN_KEY, LEGACY_REFRESH_TOKEN_KEY);
+    if (migrated) return migrated;
     const local = localStorage.getItem(REFRESH_TOKEN_KEY);
     if (local) return local;
-    const cookie = getCookie(REFRESH_TOKEN_KEY);
+    const cookie = getCookie(REFRESH_TOKEN_KEY) ?? getCookie(LEGACY_REFRESH_TOKEN_KEY);
     if (cookie) {
       try {
         localStorage.setItem(REFRESH_TOKEN_KEY, cookie);
@@ -81,7 +117,7 @@ export function getRefreshToken(): string | null {
       return cookie;
     }
   } catch {
-    return getCookie(REFRESH_TOKEN_KEY);
+    return getCookie(REFRESH_TOKEN_KEY) ?? getCookie(LEGACY_REFRESH_TOKEN_KEY);
   }
   return null;
 }
@@ -119,11 +155,16 @@ export function clearTokens(): void {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(USER_CACHE_KEY);
+    localStorage.removeItem(LEGACY_ACCESS_TOKEN_KEY);
+    localStorage.removeItem(LEGACY_REFRESH_TOKEN_KEY);
+    localStorage.removeItem(LEGACY_USER_CACHE_KEY);
   } catch {
     // Ignore error
   }
   deleteCookie(ACCESS_TOKEN_KEY);
   deleteCookie(REFRESH_TOKEN_KEY);
+  deleteCookie(LEGACY_ACCESS_TOKEN_KEY);
+  deleteCookie(LEGACY_REFRESH_TOKEN_KEY);
 }
 
 export function hasAccessToken(): boolean {
@@ -136,6 +177,14 @@ export function hasAccessToken(): boolean {
 export function getCachedUser<T = unknown>(): T | null {
   if (!isBrowser) return null;
   try {
+    const migrated = migrateLegacyKey(USER_CACHE_KEY, LEGACY_USER_CACHE_KEY);
+    if (migrated) {
+      try {
+        return JSON.parse(migrated) as T;
+      } catch {
+        return null;
+      }
+    }
     const raw = localStorage.getItem(USER_CACHE_KEY);
     return raw ? (JSON.parse(raw) as T) : null;
   } catch {
@@ -158,7 +207,7 @@ export function setCachedUser<T = unknown>(user: T): void {
 export function onStorageAuthChange(callback: (token: string | null) => void): () => void {
   if (!isBrowser) return () => {};
   const handler = (event: StorageEvent) => {
-    if (event.key === ACCESS_TOKEN_KEY) {
+    if (event.key === ACCESS_TOKEN_KEY || event.key === LEGACY_ACCESS_TOKEN_KEY) {
       callback(event.newValue);
     }
   };

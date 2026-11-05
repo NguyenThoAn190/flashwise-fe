@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { Header } from "@/components/layout/Header";
 import { MobileDrawer } from "@/components/layout/MobileDrawer";
 import DashboardLayout from "@/app/[locale]/(dashboard)/layout";
@@ -84,9 +84,22 @@ describe("Milestone 3 - Header & Mobile Drawer Components", () => {
 
       // Desktop nav links
       expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute("href", "/");
-      // Menu công khai: Công cụ học thay Thư viện; Thư viện chỉ hiện khi login
-      expect(screen.getByTestId("study-tools-trigger")).toBeInTheDocument();
-      expect(screen.getByRole("link", { name: "Your library" })).toHaveAttribute("href", "/progress");
+      // Đã đăng nhập: ẩn Công cụ học, Thư viện trỏ sang route /library mới
+      expect(screen.queryByTestId("study-tools-trigger")).not.toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Your library" })).toHaveAttribute("href", "/library");
+    });
+
+    it("keeps /progress reachable from profile dropdown after library split", () => {
+      render(<Header />);
+
+      // Desktop nav now also has a top-level /progress link — scope the
+      // dropdown assertion to the opened menu to avoid ambiguity.
+      expect(screen.getByTestId("header-progress-link")).toHaveAttribute("href", "/progress");
+
+      fireEvent.click(screen.getByTestId("header-avatar-trigger"));
+      const menu = screen.getByTestId("dropdown-menu");
+      fireEvent.click(within(menu).getByText("Progress"));
+      expect(mockPush).toHaveBeenCalledWith("/progress");
     });
 
     it("handles search input submission via callback and router fallback", () => {
@@ -141,14 +154,16 @@ describe("Milestone 3 - Header & Mobile Drawer Components", () => {
 
       fireEvent.click(avatarTrigger);
 
-      // Verify dropdown details
-      expect(screen.getByText("Flashwise Student")).toBeInTheDocument();
-      expect(screen.getByText("@flashwisestudent")).toBeInTheDocument();
-      expect(screen.getByText("student@flashwise.local")).toBeInTheDocument();
+      // Verify dropdown details — scope to the opened menu because the
+      // top-level desktop nav now also renders a "Progress" link.
+      const menu = screen.getByTestId("dropdown-menu");
+      expect(within(menu).getByText("Flashwise Student")).toBeInTheDocument();
+      expect(within(menu).getByText("@flashwisestudent")).toBeInTheDocument();
+      expect(within(menu).getByText("student@flashwise.local")).toBeInTheDocument();
 
-      const settingsBtn = screen.getByText("Settings");
-      const progressBtn = screen.getByText("Progress");
-      const logoutBtn = screen.getByText("Log out");
+      const settingsBtn = within(menu).getByText("Settings");
+      const progressBtn = within(menu).getByText("Progress");
+      const logoutBtn = within(menu).getByText("Log out");
 
       expect(settingsBtn).toBeInTheDocument();
       expect(progressBtn).toBeInTheDocument();
@@ -160,7 +175,7 @@ describe("Milestone 3 - Header & Mobile Drawer Components", () => {
 
       // Reopen and click logout
       fireEvent.click(avatarTrigger);
-      fireEvent.click(screen.getByText("Log out"));
+      fireEvent.click(within(screen.getByTestId("dropdown-menu")).getByText("Log out"));
       expect(mockLogout).toHaveBeenCalledTimes(1);
     });
 
@@ -372,8 +387,37 @@ describe("Milestone 3 - Header & Mobile Drawer Components", () => {
         />
       );
 
-      expect(screen.getByRole("button", { name: "Log in" })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Sign up" })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Log in" })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Sign up" })).toBeInTheDocument();
+    });
+
+    it("shows library + progress links when authenticated, hides progress for guests", () => {
+      const handleClose = vi.fn();
+      const { unmount } = render(
+        <MobileDrawer
+          isOpen={true}
+          onClose={handleClose}
+          user={mockUser}
+          streak={7}
+          onLogout={mockLogout}
+        />
+      );
+
+      expect(screen.getByRole("link", { name: "Your library" })).toHaveAttribute("href", "/library");
+      expect(screen.getByTestId("mobile-drawer-progress")).toHaveAttribute("href", "/progress");
+
+      unmount();
+
+      render(
+        <MobileDrawer
+          isOpen={true}
+          onClose={vi.fn()}
+          user={null}
+          streak={0}
+          onLogout={mockLogout}
+        />
+      );
+      expect(screen.queryByTestId("mobile-drawer-progress")).not.toBeInTheDocument();
     });
   });
 

@@ -2,35 +2,56 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import {
   BarChart3,
   CheckCircle2,
   Clock,
   Flame,
-  RotateCcw,
   ArrowLeft,
   Sparkles,
 } from "lucide-react";
-import {
-  apiGetProgress,
-  apiResetProgress,
-  ProgressOverview,
-} from "@/lib/api/sessions";
+import { apiGetProgress, ProgressOverview } from "@/lib/api/sessions";
+import { ApiError } from "@/types/api";
 import { Button } from "@/components/ui/Button";
-import { Dialog } from "@/components/ui/Dialog";
 import { Badge } from "@/components/ui/Badge";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 
 function ProgressContent() {
+  const t = useTranslations("progress");
+  const tCommon = useTranslations("common");
+  const tErrors = useTranslations("errors");
   const searchParams = useSearchParams();
   const targetSetId = searchParams?.get("set") || undefined;
 
   const [progress, setProgress] = useState<ProgressOverview | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
-  const [isResetting, setIsResetting] = useState(false);
+
+  const toLocalizedError = useCallback(
+    (err: unknown, fallbackKey: "loadError"): string => {
+      if (err instanceof ApiError) {
+        try {
+          // Prefer a localized gateway error code (e.g. NOT_FOUND) when present.
+          const localized = (tErrors as unknown as (k: string) => string)(err.code);
+          if (localized && localized !== err.code) return localized;
+        } catch {
+          // ignore and fall through to page-level fallback
+        }
+        // Raw gateway messages may leak the gateway default locale
+        // (e.g. "Không tìm thấy" for 404s without language headers),
+        // so never render them directly — use the page fallback instead.
+        if (err.status === 404) return t(fallbackKey);
+      }
+      const raw = (err as { message?: unknown } | null)?.message;
+      if (typeof raw === "string" && raw && !/không tìm thấy/i.test(raw)) {
+        return raw;
+      }
+      return t(fallbackKey);
+    },
+    [t, tErrors]
+  );
 
   const loadProgress = useCallback(async () => {
     setIsLoading(true);
@@ -38,29 +59,19 @@ function ProgressContent() {
     try {
       const data = await apiGetProgress();
       setProgress(data);
-    } catch (err: any) {
-      setError(err?.message || "Could not load progress overview.");
+    } catch (err: unknown) {
+      // Failure state must not render all-zero KPIs — keep progress null
+      // so the error panel (with retry) shows instead of misleading zeros.
+      setProgress(null);
+      setError(toLocalizedError(err, "loadError"));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [toLocalizedError]);
 
   useEffect(() => {
     loadProgress();
   }, [loadProgress]);
-
-  const handleConfirmReset = async () => {
-    setIsResetting(true);
-    try {
-      await apiResetProgress(targetSetId);
-      setIsResetModalOpen(false);
-      await loadProgress();
-    } catch (err: any) {
-      setError(err?.message || "Failed to reset progress.");
-    } finally {
-      setIsResetting(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -77,6 +88,28 @@ function ProgressContent() {
             />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  // Do not display all-zero KPIs on failure: surface the localized error
+  // with a retry action instead of a misleading empty dashboard.
+  if (error && !progress) {
+    return (
+      <div
+        data-testid="progress-page"
+        className="max-w-5xl mx-auto py-6 sm:py-8 px-4 space-y-8"
+      >
+        <div
+          role="alert"
+          data-testid="progress-error"
+          className="p-4 rounded-xl bg-quizlet-coral-bg border border-quizlet-coral-border text-quizlet-coral text-sm font-bold"
+        >
+          {error}
+        </div>
+        <Button variant="secondary" onClick={loadProgress}>
+          {tCommon("retry")}
+        </Button>
       </div>
     );
   }
@@ -105,26 +138,16 @@ function ProgressContent() {
             className="inline-flex items-center gap-2 text-xs font-bold text-quizlet-slate-secondary hover:text-quizlet-indigo transition-colors mb-1"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>{targetSetId ? "Back to Study Set" : "Back to Home"}</span>
+            <span>{targetSetId ? t("backSet") : t("backHome")}</span>
           </Link>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-quizlet-slate flex items-center gap-2.5">
             <BarChart3 className="w-7 h-7 text-quizlet-indigo" />
-            <span>Mastery & Spaced Repetition Progress</span>
+            <span>{t("title")}</span>
           </h1>
           <p className="text-sm text-quizlet-slate-secondary">
-            Track your knowledge states across all flashcards and scheduled SRS reviews.
+            {t("subtitle")}
           </p>
         </div>
-
-        <Button
-          variant="danger"
-          size="sm"
-          data-testid="reset-progress-btn"
-          onClick={() => setIsResetModalOpen(true)}
-          leftIcon={<RotateCcw className="w-4 h-4" />}
-        >
-          Reset Progress
-        </Button>
       </div>
 
       {error && (
@@ -141,7 +164,7 @@ function ProgressContent() {
         <div className="bg-quizlet-surface rounded-2xl border border-quizlet-border-light p-5 shadow-card space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase text-quizlet-slate-muted">
-              Total Cards
+              {t("totalCards")}
             </span>
             <Sparkles className="w-4 h-4 text-quizlet-indigo" />
           </div>
@@ -152,14 +175,14 @@ function ProgressContent() {
             {total}
           </p>
           <p className="text-xs text-quizlet-slate-secondary">
-            Across active study sets
+            {t("acrossSets")}
           </p>
         </div>
 
         <div className="bg-quizlet-surface rounded-2xl border border-quizlet-border-light p-5 shadow-card space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase text-quizlet-green">
-              Mastered
+              {t("mastered")}
             </span>
             <CheckCircle2 className="w-4 h-4 text-quizlet-green" />
           </div>
@@ -170,14 +193,14 @@ function ProgressContent() {
             {mastered}
           </p>
           <p className="text-xs text-quizlet-slate-secondary">
-            {pct(mastered)}% of total flashcards
+            {t("ofTotal", { pct: pct(mastered) })}
           </p>
         </div>
 
         <div className="bg-quizlet-surface rounded-2xl border border-quizlet-border-light p-5 shadow-card space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase text-quizlet-warning">
-              Due for Review
+              {t("dueReview")}
             </span>
             <Clock className="w-4 h-4 text-quizlet-warning" />
           </div>
@@ -188,14 +211,14 @@ function ProgressContent() {
             {dueCount}
           </p>
           <p className="text-xs text-quizlet-slate-secondary">
-            Scheduled by SRS algorithm
+            {t("scheduledSRS")}
           </p>
         </div>
 
         <div className="bg-quizlet-surface rounded-2xl border border-quizlet-border-light p-5 shadow-card space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase text-quizlet-indigo">
-              Mastery Rate
+              {t("masteryRate")}
             </span>
             <Flame className="w-4 h-4 text-quizlet-gold" />
           </div>
@@ -206,7 +229,7 @@ function ProgressContent() {
             {accuracy}%
           </p>
           <p className="text-xs text-quizlet-slate-secondary">
-            Overall retention score
+            {t("retention")}
           </p>
         </div>
       </div>
@@ -215,10 +238,10 @@ function ProgressContent() {
       <div className="bg-quizlet-surface rounded-2xl border border-quizlet-border-light p-6 sm:p-8 shadow-card space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-quizlet-slate">
-            Knowledge State Distribution
+            {t("distribution")}
           </h2>
           <Badge status="MASTERED" size="sm">
-            Flashwise 5-Layer SRS Engine
+            {t("srsEngine")}
           </Badge>
         </div>
 
@@ -226,12 +249,12 @@ function ProgressContent() {
           {/* Mastered */}
           <div className="space-y-1.5">
             <div className="flex justify-between text-xs font-bold">
-              <span className="text-quizlet-green">Mastered</span>
+              <span className="text-quizlet-green">{t("mastered")}</span>
               <span
                 data-testid="state-mastered-val"
                 className="text-quizlet-slate"
               >
-                {mastered} cards ({pct(mastered)}%)
+                {t("cardsPct", { count: mastered, pct: pct(mastered) })}
               </span>
             </div>
             <div className="w-full h-3 bg-quizlet-canvas rounded-full overflow-hidden">
@@ -245,12 +268,12 @@ function ProgressContent() {
           {/* Reviewing */}
           <div className="space-y-1.5">
             <div className="flex justify-between text-xs font-bold">
-              <span className="text-quizlet-indigo">Reviewing / Familiar</span>
+              <span className="text-quizlet-indigo">{t("reviewing")}</span>
               <span
                 data-testid="state-reviewing-val"
                 className="text-quizlet-slate"
               >
-                {reviewing} cards ({pct(reviewing)}%)
+                {t("cardsPct", { count: reviewing, pct: pct(reviewing) })}
               </span>
             </div>
             <div className="w-full h-3 bg-quizlet-canvas rounded-full overflow-hidden">
@@ -264,12 +287,12 @@ function ProgressContent() {
           {/* Learning */}
           <div className="space-y-1.5">
             <div className="flex justify-between text-xs font-bold">
-              <span className="text-quizlet-coral">Still Learning</span>
+              <span className="text-quizlet-coral">{t("stillLearning")}</span>
               <span
                 data-testid="state-learning-val"
                 className="text-quizlet-slate"
               >
-                {learning} cards ({pct(learning)}%)
+                {t("cardsPct", { count: learning, pct: pct(learning) })}
               </span>
             </div>
             <div className="w-full h-3 bg-quizlet-canvas rounded-full overflow-hidden">
@@ -283,12 +306,12 @@ function ProgressContent() {
           {/* Not Studied */}
           <div className="space-y-1.5">
             <div className="flex justify-between text-xs font-bold">
-              <span className="text-quizlet-slate-secondary">Not Studied</span>
+              <span className="text-quizlet-slate-secondary">{t("notStudied")}</span>
               <span
                 data-testid="state-not-studied-val"
                 className="text-quizlet-slate"
               >
-                {notStudied} cards ({pct(notStudied)}%)
+                {t("cardsPct", { count: notStudied, pct: pct(notStudied) })}
               </span>
             </div>
             <div className="w-full h-3 bg-quizlet-canvas rounded-full overflow-hidden">
@@ -300,36 +323,6 @@ function ProgressContent() {
           </div>
         </div>
       </div>
-
-      {/* Reset Progress Confirmation Dialog */}
-      <Dialog
-        open={isResetModalOpen}
-        onClose={() => setIsResetModalOpen(false)}
-        title="Reset learning progress?"
-        description="This will reset all flashcards back to 'Not studied' and clear scheduled Spaced Repetition intervals."
-        footer={
-          <>
-            <Button
-              variant="secondary"
-              onClick={() => setIsResetModalOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="danger"
-              data-testid="confirm-reset-progress-btn"
-              isLoading={isResetting}
-              onClick={handleConfirmReset}
-            >
-              Yes, Reset Progress
-            </Button>
-          </>
-        }
-      >
-        <p className="text-sm text-quizlet-slate-secondary">
-          Your flashcards and study sets will not be deleted — only your mastery states will be reset.
-        </p>
-      </Dialog>
     </div>
   );
 }

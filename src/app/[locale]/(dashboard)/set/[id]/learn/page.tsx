@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import Link from "next/link";
 import { ArrowLeft, Brain } from "lucide-react";
 import {
@@ -229,6 +230,8 @@ export default function LearnSessionPage() {
                 prompt={question.prompt}
                 options={question.options || []}
                 disabled={Boolean(feedback) || isSubmitting}
+                selectedAnswer={feedback ? submittedDisplay : null}
+                correctAnswer={feedback ? feedback.correct_answer : null}
                 onSelectOption={(_idx, optText) => handleAnswer(optText, optText)}
               />
             )}
@@ -238,6 +241,15 @@ export default function LearnSessionPage() {
                 prompt={question.prompt}
                 proposedDefinition={question.proposed_definition || ""}
                 disabled={Boolean(feedback) || isSubmitting}
+                selectedChoice={
+                  feedback ? submittedDisplay === "True" : null
+                }
+                correctChoice={
+                  feedback
+                    ? (question.is_true ??
+                      (question.proposed_definition === feedback.correct_answer))
+                    : null
+                }
                 onAnswer={(choice) =>
                   handleAnswer(choice ? "True" : "False", choice ? "True" : "False")
                 }
@@ -272,6 +284,11 @@ export default function LearnSessionPage() {
                 result={feedback}
                 submittedAnswerText={submittedDisplay}
                 onContinue={handleContinue}
+                hideAnswerComparison={
+                  question.question_type === "mcq" ||
+                  question.question_type === "true_false" ||
+                  question.question_type === "recall"
+                }
               />
             )}
           </div>

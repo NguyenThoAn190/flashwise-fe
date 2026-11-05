@@ -207,7 +207,7 @@ describe("Milestone 4: 3D FlashcardViewer & Study Set Detail", () => {
       password: "Password123!",
     });
     window.localStorage.setItem(
-      "quizlet_access_token",
+      "flashwise_access_token",
       loginRes.data.access_token
     );
 

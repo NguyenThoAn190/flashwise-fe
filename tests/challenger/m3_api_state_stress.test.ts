@@ -817,8 +817,8 @@ describe("Milestone 3 Challenger: API, Normalizer, Query & State Resilience Stre
       });
     });
 
-    it("empirically verifies Starred tab removal on unstar, and rollback if unstar rejects", async () => {
-      // In the starred tab, only starred sets are returned initially
+    it("empirically verifies unstar keeps card visible, and rollback if unstar rejects", async () => {
+      // Without a dedicated starred tab, unstar only flips the icon state
       const starredOnly = [
         {
           id: "starred_a",
@@ -838,15 +838,6 @@ describe("Milestone 3 Challenger: API, Normalizer, Query & State Resilience Stre
 
       render(React.createElement(DashboardPage));
 
-      await waitFor(() => {
-        expect(screen.getByText("Starred Biology")).toBeInTheDocument();
-      });
-
-      // Switch to Starred tab
-      const starredTab = screen.getByTestId("tab-starred");
-      fireEvent.click(starredTab);
-
-      // Wait for Starred tab fetch to complete
       await waitFor(() => {
         expect(screen.getByText("Starred Biology")).toBeInTheDocument();
         expect(screen.getByTestId("study-set-star-button")).toBeInTheDocument();
@@ -872,10 +863,10 @@ describe("Milestone 3 Challenger: API, Normalizer, Query & State Resilience Stre
 
       fireEvent.click(starBtn);
 
-      // Now it must be filtered out of the Starred tab view!
+      // Card stays visible with updated unstarred state (no tab auto-removal)
       await waitFor(() => {
-        expect(screen.queryByText("Starred Biology")).not.toBeInTheDocument();
-        expect(screen.getByTestId("empty-study-sets")).toBeInTheDocument();
+        expect(screen.getByText("Starred Biology")).toBeInTheDocument();
+        expect(starBtn).toHaveAttribute("aria-label", "Star study set");
       });
     });
 

@@ -18,7 +18,7 @@ export function AuthErrorAlert({ message, className, onDismiss }: AuthErrorAlert
       role="alert"
       aria-live="polite"
       className={cn(
-        "flex items-start gap-3 p-3.5 rounded-xl border transition-all mb-5",
+        "flex items-start gap-3 p-3.5 rounded-xl border transition-all",
         "bg-quizlet-coral-bg border-quizlet-coral-border text-quizlet-slate text-sm",
         className
       )}

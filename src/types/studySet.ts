@@ -1,6 +1,6 @@
 /**
  * Flashwise Study Sets, Flashcards, and Review Types
- * Aligned with PlayGrid API Gateway (/api/v1/quizlet) & Mock Server
+ * Aligned with PlayGrid API Gateway (/api/v1/quizlet legacy prefix, Flashwise module) & Mock Server
  */
 
 export type SetVisibility = "public" | "private" | "unlisted";

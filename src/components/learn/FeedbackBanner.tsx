@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { CheckCircle2, XCircle, ArrowRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/Button";
 import { SubmitAnswerResult } from "@/lib/api/sessions";
 
@@ -9,6 +9,12 @@ export interface FeedbackBannerProps {
   result: SubmitAnswerResult;
   submittedAnswerText?: string;
   onContinue: () => void;
+  /**
+   * Khi true (MCQ / True-False / Recall đã highlight inline ngay trên
+   * đáp án), chỉ hiện hint gọn. Written = false để hiện thêm dòng
+   * đáp án đúng (vì input không tự hiện).
+   */
+  hideAnswerComparison?: boolean;
   children?: React.ReactNode;
 }
 
@@ -16,8 +22,10 @@ export function FeedbackBanner({
   result,
   submittedAnswerText,
   onContinue,
+  hideAnswerComparison = false,
   children,
 }: FeedbackBannerProps) {
+  const t = useTranslations("learn");
   const {
     is_correct,
     correct_answer,
@@ -28,121 +36,112 @@ export function FeedbackBanner({
 
   const delta = mastery_score_after - mastery_score_before;
 
-  // Press Enter or Space to quickly continue
+  // Nhấn phím bất kỳ (ngoài input) để tiếp tục — đúng copy trên bar.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Enter" || e.key === " ") {
-        const target = e.target as HTMLElement | null;
-        if (
-          target &&
-          (target.tagName === "INPUT" ||
-            target.tagName === "TEXTAREA" ||
-            target.isContentEditable)
-        ) {
-          return;
-        }
-        e.preventDefault();
-        onContinue();
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
       }
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === "Tab" || e.key === "Shift") return;
+      e.preventDefault();
+      onContinue();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onContinue]);
 
+  const hintText = is_correct
+    ? t("correctHint")
+    : hideAnswerComparison
+      ? t("incorrectHint")
+      : t("typeCorrectHint");
+
+  const showCorrectLine =
+    !is_correct && !hideAnswerComparison && correct_answer;
+
   return (
     <div
       data-testid="feedback-banner"
-      className={`rounded-2xl border-2 p-5 sm:p-6 shadow-card space-y-4 transition-all ${
-        is_correct
-          ? "bg-quizlet-green-bg border-quizlet-green-border"
-          : "bg-quizlet-coral-bg border-quizlet-coral-border"
-      }`}
+      className="sticky bottom-0 z-20 -mx-4 border-t border-quizlet-border-light bg-white/95 px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] backdrop-blur sm:rounded-2xl sm:border sm:py-4 sm:shadow-card"
     >
-      {/* Hidden for accessibility & test backward compatibility */}
+      {/* Giữ để tương thích test + a11y */}
       <div data-testid="feedback-mastery-delta" className="sr-only">
         Mastery: {mastery_score_before}% → {mastery_score_after}% (
         {delta >= 0 ? `+${delta}%` : `${delta}%`})
       </div>
+      <span data-testid="feedback-correct-answer" className="sr-only">
+        {correct_answer}
+      </span>
+      {/* Giữ heading cho test cũ, ẩn visually */}
+      <span data-testid="feedback-status-heading" className="sr-only">
+        {is_correct ? t("correct") : t("incorrect")}
+      </span>
 
-      {/* Main Status Header */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          {is_correct ? (
-            <CheckCircle2 className="w-6 h-6 text-quizlet-green shrink-0" />
-          ) : (
-            <XCircle className="w-6 h-6 text-quizlet-coral shrink-0" />
-          )}
-          <h3
-            data-testid="feedback-status-heading"
-            className={`text-lg font-extrabold ${
-              is_correct ? "text-quizlet-green" : "text-quizlet-coral"
-            }`}
-          >
-            {is_correct
-              ? "Awesome! You got it right!"
-              : "Not quite — keep studying this term!"}
-          </h3>
-        </div>
-
-        {/* Quick Continue Button on desktop */}
-        <Button
-          type="button"
-          size="sm"
-          variant={is_correct ? "primary" : "secondary"}
-          data-testid="feedback-continue-btn"
-          onClick={onContinue}
-          rightIcon={<ArrowRight className="w-4 h-4" />}
-          className="hidden sm:inline-flex"
-        >
-          Continue
-        </Button>
-      </div>
-
-      {/* When Incorrect: Display Clean Answer Comparison */}
-      {!is_correct && (
-        <div className="bg-white rounded-xl p-4 border border-quizlet-border-light space-y-2.5">
-          {submittedAnswerText && submittedAnswerText !== correct_answer && (
-            <div className="text-sm">
-              <span className="font-semibold text-quizlet-slate-muted">Bạn đã chọn: </span>
-              <span className="text-quizlet-coral font-medium line-through">
-                {submittedAnswerText}
-              </span>
-            </div>
-          )}
-
-          <div className="text-sm sm:text-base">
-            <span className="font-semibold text-quizlet-slate-muted">Đáp án đúng: </span>
-            <span
-              data-testid="feedback-correct-answer"
-              className="font-extrabold text-quizlet-green"
-            >
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-2">
+        {/* Written sai: hiện đáp án đúng gọn 1 dòng, không hộp đỏ */}
+        {showCorrectLine && (
+          <p className="truncate text-[13px] leading-snug sm:text-sm">
+            <span className="font-semibold text-quizlet-slate-muted">
+              {t("correctAnswer")}
+            </span>
+            <span className="font-extrabold text-quizlet-green">
               {correct_answer}
             </span>
-          </div>
+            {submittedAnswerText &&
+              submittedAnswerText !== correct_answer && (
+                <span className="ml-2 hidden font-medium text-quizlet-slate-muted sm:inline">
+                  ({t("youChose")}
+                  <span className="line-through">{submittedAnswerText}</span>)
+                </span>
+              )}
+          </p>
+        )}
+        {explanation && !hideAnswerComparison && (
+          <p className="hidden truncate text-xs text-quizlet-slate-secondary sm:block">
+            {explanation}
+          </p>
+        )}
 
-          {explanation && (
-            <p className="text-xs text-quizlet-slate-secondary pt-1.5 border-t border-quizlet-border-light">
-              {explanation}
-            </p>
-          )}
+        {children ? <div className="w-full">{children}</div> : null}
+
+        {/* Thanh bar: hint trái + nút pill phải (kiểu ảnh mẫu) */}
+        <div className="flex items-center justify-between gap-3">
+          <p
+            data-testid="feedback-hint"
+            className="min-w-0 flex-1 text-[13px] font-medium leading-snug text-quizlet-slate-secondary sm:text-sm"
+          >
+            {hintText}
+          </p>
+
+          {/* Desktop */}
+          <Button
+            type="button"
+            variant="primary"
+            data-testid="feedback-continue-btn"
+            onClick={onContinue}
+            className="hidden shrink-0 rounded-full px-6 py-2.5 text-sm font-bold sm:inline-flex"
+          >
+            {t("continue")}
+          </Button>
+
+          {/* Mobile: nút pill gọn, cao tối thiểu 44px dễ bấm */}
+          <Button
+            type="button"
+            variant="primary"
+            data-testid="feedback-continue-btn-mobile"
+            onClick={onContinue}
+            className="inline-flex min-h-[44px] shrink-0 items-center rounded-full px-6 py-2.5 text-sm font-bold sm:hidden"
+          >
+            {t("continue")}
+          </Button>
         </div>
-      )}
-
-      {/* Hidden slot for optional children if passed */}
-      {children ? <div className="sr-only">{children}</div> : null}
-
-      {/* Mobile Continue Button */}
-      <div className="flex sm:hidden justify-end pt-1">
-        <Button
-          type="button"
-          variant={is_correct ? "primary" : "secondary"}
-          data-testid="feedback-continue-btn-mobile"
-          onClick={onContinue}
-          rightIcon={<ArrowRight className="w-4 h-4" />}
-          className="w-full"
-        >
-          Continue
-        </Button>
       </div>
     </div>
   );

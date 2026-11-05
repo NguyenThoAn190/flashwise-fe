@@ -106,14 +106,14 @@ export function SignupForm({ redirectParam }: SignupFormProps) {
   const loginHref = `${localePrefix}/login${querySuffix}`;
 
   return (
-    <div id="auth-panel-signup" role="tabpanel" aria-labelledby="auth-tab-signup">
+    <div id="auth-panel-signup" role="tabpanel" aria-labelledby="auth-tab-signup" className="space-y-6">
       <AuthErrorAlert
         message={serverError}
         onDismiss={() => setServerError(null)}
       />
 
       {/* Google Social Signup */}
-      <div className="space-y-4">
+      <div className="space-y-5">
         <GoogleLoginButton
           text="signup_with"
           onSuccess={() => {
@@ -127,17 +127,18 @@ export function SignupForm({ redirectParam }: SignupFormProps) {
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-quizlet-border-light" />
           </div>
-          <span className="relative bg-quizlet-surface px-3 text-xs font-bold uppercase text-quizlet-slate-muted">
+          <span className="relative bg-quizlet-surface px-3 text-xs font-semibold normal-case tracking-normal text-quizlet-slate-muted">
             {t("orSignupWithEmail")}
           </span>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} noValidate className="space-y-4 pt-2">
+      <form onSubmit={handleSubmit} noValidate className="space-y-5">
         {/* Full Name Input */}
         <Input
           id="signup-fullname"
           label={t("fullName")}
+          labelClassName="text-sm font-semibold normal-case tracking-normal"
           name="full_name"
           type="text"
           autoComplete="name"
@@ -155,6 +156,7 @@ export function SignupForm({ redirectParam }: SignupFormProps) {
         <Input
           id="signup-email"
           label={t("email")}
+          labelClassName="text-sm font-semibold normal-case tracking-normal"
           name="email"
           type="email"
           autoComplete="email"
@@ -172,6 +174,7 @@ export function SignupForm({ redirectParam }: SignupFormProps) {
         <Input
           id="signup-password"
           label={t("password")}
+          labelClassName="text-sm font-semibold normal-case tracking-normal"
           name="password"
           type={showPassword ? "text" : "password"}
           autoComplete="new-password"
@@ -205,6 +208,7 @@ export function SignupForm({ redirectParam }: SignupFormProps) {
         <Input
           id="signup-confirm-password"
           label={t("confirmPassword")}
+          labelClassName="text-sm font-semibold normal-case tracking-normal"
           name="confirm_password"
           type={showConfirmPassword ? "text" : "password"}
           autoComplete="new-password"
@@ -236,7 +240,7 @@ export function SignupForm({ redirectParam }: SignupFormProps) {
         />
 
         {/* Submit Button */}
-        <div className="pt-2">
+        <div>
           <Button
             type="submit"
             variant="primary"
@@ -251,7 +255,7 @@ export function SignupForm({ redirectParam }: SignupFormProps) {
       </form>
 
       {/* Switch to Login Link */}
-      <div className="mt-6 pt-5 border-t border-quizlet-border-light text-center">
+      <div className="pt-6 border-t border-quizlet-border-light text-center">
         <p className="text-sm text-quizlet-slate-secondary">
           {t("haveAccount")}{" "}
           <Link

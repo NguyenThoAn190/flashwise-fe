@@ -1176,10 +1176,18 @@ export class MockApiGatewayServer {
     }
 
     // ----------------------------------------------------
-    // REVIEWS & PROGRESS TRACKING (/progress, /reviews)
+    // REVIEWS & PROGRESS TRACKING
+    // Gateway contract: GET /api/v1/quizlet/users/me/progress ->
+    // OverallProgressSummary (total_cards, not_studied_count,
+    // learning_count, familiar_count, reviewing_count, mastered_count,
+    // due_reviews_count, accuracy_rate, average_mastery).
+    // Legacy aliases (/api/v1/progress, /api/v1/quizlet/users/me/reviews)
+    // are kept so old clients/tests keep working.
     // ----------------------------------------------------
     if (
-      (path === "/api/v1/progress" || path === "/api/v1/quizlet/users/me/reviews") &&
+      (path === "/api/v1/progress" ||
+        path === "/api/v1/quizlet/users/me/progress" ||
+        path === "/api/v1/quizlet/users/me/reviews") &&
       normalizedMethod === "GET"
     ) {
       // Calculate global or user progress across all sets
@@ -1187,6 +1195,7 @@ export class MockApiGatewayServer {
       let notStudied = 0;
       let learning = 0;
       let reviewing = 0;
+      let familiar = 0;
       let mastered = 0;
 
       for (const set of this.studySets.values()) {
@@ -1213,16 +1222,43 @@ export class MockApiGatewayServer {
 
       return json(200, {
         total_cards: totalCards,
+        // New OverallProgressSummary *_count contract
+        not_studied_count: notStudied,
+        learning_count: learning,
+        familiar_count: familiar,
+        reviewing_count: reviewing,
+        mastered_count: mastered,
+        due_reviews_count: dueReviewsCount,
+        accuracy_rate: totalCards > 0 ? Math.round((mastered / totalCards) * 100) : 0,
+        average_mastery: 0,
+        // Legacy short aliases for backward compatibility
         not_studied: notStudied,
         learning: learning,
         reviewing: reviewing,
         mastered: mastered,
-        due_reviews_count: dueReviewsCount,
-        accuracy_rate: totalCards > 0 ? Math.round((mastered / totalCards) * 100) : 0,
       });
     }
 
-    if (path === "/api/v1/progress/reset" && normalizedMethod === "POST") {
+    // Per-set progress reset: POST /api/v1/quizlet/study-sets/:id/progress/reset
+    const setProgressResetMatch = path.match(
+      /^\/api\/v1\/quizlet\/study-sets\/([^/]+)\/progress\/reset$/
+    );
+    if (setProgressResetMatch && normalizedMethod === "POST") {
+      const setId = setProgressResetMatch[1];
+      const set = this.studySets.get(setId);
+      if (!set) return json(404, { error: `Study set '${setId}' not found` });
+      set.cards.forEach((c) => {
+        c.state = "not_studied";
+        delete c.next_review_at;
+      });
+      return json(200, { success: true, message: "Progress reset successfully" });
+    }
+
+    if (
+      (path === "/api/v1/progress/reset" ||
+        path === "/api/v1/quizlet/users/me/progress/reset") &&
+      normalizedMethod === "POST"
+    ) {
       const { study_set_id } = body || {};
 
       if (study_set_id) {

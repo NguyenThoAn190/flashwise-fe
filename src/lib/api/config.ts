@@ -26,6 +26,56 @@ export const DEFAULT_HEADERS = {
   "X-PlayGrid-Client": "web-app",
 } as const;
 
+const SUPPORTED_LOCALES = ["en", "vi", "zh", "ja", "ko"] as const;
+
+const LOCALE_TO_BCP47: Record<string, string> = {
+  en: "en-US",
+  vi: "vi-VN",
+  zh: "zh-CN",
+  ja: "ja-JP",
+  ko: "ko-KR",
+};
+
+/**
+ * Resolves the outgoing locale for Gateway language negotiation.
+ * Gateway `ResolveLanguage` honors `X-Lang` / `X-Language` / `Accept-Language`
+ * and falls back to `vi`, so the client must always send it — otherwise
+ * error messages (e.g. 404 NOT_FOUND "Không tìm thấy") leak raw Vietnamese
+ * into non-Vietnamese UIs.
+ */
+export function getOutgoingLocaleShort(): string {
+  if (typeof window === "undefined") return "vi";
+  try {
+    const segs = window.location.pathname.split("/").filter(Boolean);
+    const first = (segs[0] || "").toLowerCase();
+    if ((SUPPORTED_LOCALES as readonly string[]).includes(first)) return first;
+  } catch {
+    // ignore
+  }
+  try {
+    const match = document.cookie.match(/(?:^|;\s*)NEXT_LOCALE=([^;]+)/);
+    const cookieLocale = decodeURIComponent(match?.[1] || "").toLowerCase();
+    if ((SUPPORTED_LOCALES as readonly string[]).includes(cookieLocale)) {
+      return cookieLocale;
+    }
+  } catch {
+    // ignore
+  }
+  try {
+    const nav = (navigator.language || "vi").toLowerCase();
+    const short = nav.split("-")[0];
+    if ((SUPPORTED_LOCALES as readonly string[]).includes(short)) return short;
+  } catch {
+    // ignore
+  }
+  return "vi";
+}
+
+export function getOutgoingBcp47(): string {
+  const short = getOutgoingLocaleShort();
+  return LOCALE_TO_BCP47[short] || "vi-VN";
+}
+
 export const API_ENDPOINTS = {
   auth: {
     signup: "/auth/signup",
@@ -69,8 +119,8 @@ export const API_ENDPOINTS = {
     due: "/quizlet/users/me/reviews",
   },
   progress: {
-    overview: "/progress",
-    reset: "/progress/reset",
+    overview: "/quizlet/users/me/progress",
+    reset: "/quizlet/users/me/progress/reset",
   },
 } as const;
 

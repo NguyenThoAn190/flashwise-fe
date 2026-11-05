@@ -3,7 +3,6 @@
 import React from "react";
 import Link from "next/link";
 import { Play, ArrowRight, Plus } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import type { ToolSlug } from "./toolLandingData";
 import { TOOL_APP_HREF, getToolCopy } from "./toolLandingData";
 
@@ -51,39 +50,21 @@ export function ToolLandingHero({
           </p>
 
           <div className="flex flex-wrap items-center gap-3">
-            {appHref ? (
-              <Link href={appHref}>
-                <Button
-                  size="md"
-                  variant="secondary"
-                  rightIcon={<ArrowRight className="h-4 w-4" />}
-                  data-testid={`tool-hero-primary-${slug}`}
-                >
-                  {copy.primaryCta}
-                </Button>
-              </Link>
-            ) : (
-              <Link href="/signup">
-                <Button
-                  size="md"
-                  variant="secondary"
-                  rightIcon={<ArrowRight className="h-4 w-4" />}
-                  data-testid={`tool-hero-primary-${slug}`}
-                >
-                  {copy.primaryCta}
-                </Button>
-              </Link>
-            )}
-            <Link href="/set/create">
-              <Button
-                size="md"
-                variant="ghost"
-                className="text-white hover:bg-white/10 hover:text-white border border-white/30"
-                leftIcon={<Plus className="h-4 w-4" />}
-                data-testid={`tool-hero-secondary-${slug}`}
-              >
-                {copy.secondaryCta}
-              </Button>
+            <Link
+              href={appHref ?? "/signup"}
+              data-testid={`tool-hero-primary-${slug}`}
+              className="inline-flex items-center justify-center select-none font-semibold transition-all duration-200 outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] px-4 py-2.5 text-sm rounded-xl gap-2 bg-white text-quizlet-slate border-2 border-quizlet-border hover:bg-quizlet-canvas hover:border-quizlet-border-hover active:bg-quizlet-border-light focus-visible:ring-quizlet-border-hover"
+            >
+              {copy.primaryCta}
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+            <Link
+              href="/set/create"
+              data-testid={`tool-hero-secondary-${slug}`}
+              className="inline-flex items-center justify-center select-none font-semibold transition-all duration-200 outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] px-4 py-2.5 text-sm rounded-xl gap-2 bg-transparent text-white hover:bg-white/10 border border-white/30"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              {copy.secondaryCta}
             </Link>
           </div>
 

@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { SearchX, Star, BookOpen, Plus, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { StudySetFilter } from "@/types/studySet";
@@ -17,28 +18,29 @@ export function EmptyStudySets({
   onClearFilters,
   className,
 }: EmptyStudySetsProps) {
+  const t = useTranslations("sets");
   const isSearching = Boolean(searchQuery && searchQuery.trim());
 
   let icon = <BookOpen className="w-8 h-8 text-quizlet-slate-muted" />;
-  let title = "No study sets found";
-  let description = "Create your first study set or explore sets to begin learning.";
+  let title = t("emptyTitle");
+  let description = t("emptyDesc");
 
   if (isSearching) {
     icon = <SearchX className="w-8 h-8 text-quizlet-slate-muted" />;
-    title = `No sets match "${searchQuery}"`;
-    description = "Check your spelling or try searching for another term.";
+    title = t("emptySearchTitle", { query: searchQuery?.trim() ?? "" });
+    description = t("emptySearchDesc");
   } else if (filter === "starred") {
     icon = <Star className="w-8 h-8 text-quizlet-gold" />;
-    title = "No starred sets yet";
-    description = "Favorite sets with the star icon to easily access them here anytime.";
+    title = t("emptyStarredTitle");
+    description = t("emptyStarredDesc");
   } else if (filter === "mine") {
     icon = <BookOpen className="w-8 h-8 text-quizlet-indigo" />;
-    title = "You haven't created any study sets";
-    description = "Create study sets to memorize flashcards, practice questions, and track mastery.";
+    title = t("emptyMineTitle");
+    description = t("emptyMineDesc");
   } else if (filter === "recent") {
     icon = <BookOpen className="w-8 h-8 text-quizlet-slate-muted" />;
-    title = "No recently studied sets";
-    description = "Sets you create or study will appear here in chronological order.";
+    title = t("emptyRecentTitle");
+    description = t("emptyRecentDesc");
   }
 
   return (
@@ -66,7 +68,7 @@ export function EmptyStudySets({
             leftIcon={<RotateCcw className="w-4 h-4" />}
             data-testid="empty-clear-search-button"
           >
-            Clear search
+            {t("clearSearch")}
           </Button>
         ) : null}
 
@@ -77,7 +79,7 @@ export function EmptyStudySets({
             leftIcon={<Plus className="w-4 h-4" />}
             data-testid="empty-create-set-button"
           >
-            Create a study set
+            {t("createSet")}
           </Button>
         </Link>
       </div>

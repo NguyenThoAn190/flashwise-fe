@@ -88,14 +88,14 @@ export function LoginForm({ redirectParam }: LoginFormProps) {
   };
 
   return (
-    <div id="auth-panel-login" role="tabpanel" aria-labelledby="auth-tab-login">
+    <div id="auth-panel-login" role="tabpanel" aria-labelledby="auth-tab-login" className="space-y-6">
       <AuthErrorAlert
         message={serverError}
         onDismiss={() => setServerError(null)}
       />
 
       {/* Google Social Login */}
-      <div className="space-y-4">
+      <div className="space-y-5">
         <GoogleLoginButton
           text="continue_with"
           onSuccess={() => {
@@ -109,17 +109,18 @@ export function LoginForm({ redirectParam }: LoginFormProps) {
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-quizlet-border-light" />
           </div>
-          <span className="relative bg-quizlet-surface px-3 text-xs font-bold uppercase text-quizlet-slate-muted">
+          <span className="relative bg-quizlet-surface px-3 text-xs font-semibold normal-case tracking-normal text-quizlet-slate-muted">
             {t("orLoginWithEmail")}
           </span>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} noValidate className="space-y-4 pt-2">
+      <form onSubmit={handleSubmit} noValidate className="space-y-5">
         {/* Email or Username Input */}
         <Input
           id="login-username"
           label={t("emailOrUsername")}
+          labelClassName="text-sm font-semibold normal-case tracking-normal"
           name="username"
           type="text"
           autoComplete="username"
@@ -134,10 +135,11 @@ export function LoginForm({ redirectParam }: LoginFormProps) {
         />
 
         {/* Password Input with Visibility Toggle */}
-        <div className="space-y-1">
+        <div className="space-y-2">
           <Input
             id="login-password"
             label={t("password")}
+            labelClassName="text-sm font-semibold normal-case tracking-normal"
             name="password"
             type={showPassword ? "text" : "password"}
             autoComplete="current-password"
@@ -165,7 +167,7 @@ export function LoginForm({ redirectParam }: LoginFormProps) {
               </button>
             }
           />
-          <div className="flex justify-end pt-1">
+          <div className="flex justify-end">
             <Link
               href={recoverHref}
               className="text-xs font-semibold text-quizlet-slate-secondary hover:text-quizlet-indigo transition-colors"
@@ -176,7 +178,7 @@ export function LoginForm({ redirectParam }: LoginFormProps) {
         </div>
 
         {/* Submit Button */}
-        <div className="pt-2">
+        <div>
           <Button
             type="submit"
             variant="primary"
@@ -191,7 +193,7 @@ export function LoginForm({ redirectParam }: LoginFormProps) {
       </form>
 
       {/* Switch to Signup Link */}
-      <div className="mt-6 pt-5 border-t border-quizlet-border-light text-center">
+      <div className="pt-6 border-t border-quizlet-border-light text-center">
         <p className="text-sm text-quizlet-slate-secondary">
           {t("newToApp")}{" "}
           <Link

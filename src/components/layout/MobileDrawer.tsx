@@ -14,6 +14,7 @@ import {
   Plus,
   Home,
   BookOpen,
+  BarChart3,
   Sparkles,
   Settings,
   LogOut,
@@ -160,7 +161,7 @@ export function MobileDrawer({
         <div className="p-4 flex flex-col gap-4">
           {/* Header row: Logo & Close */}
           <div className="flex items-center justify-between pb-3 border-b border-quizlet-border-light">
-            <BrandLogo height={28} />
+            <BrandLogo height={38} />
             <button
               ref={closeBtnRef}
               type="button"
@@ -203,7 +204,7 @@ export function MobileDrawer({
           </Button>
           )}
 
-          {/* Navigation Items: Công cụ học nhóm Học sinh / Giáo viên */}
+          {/* Navigation Items: Công cụ học chỉ hiện khi chưa đăng nhập */}
           <nav className="flex flex-col gap-1 py-2 text-sm font-semibold text-quizlet-slate">
             <Link
               href="/"
@@ -214,6 +215,8 @@ export function MobileDrawer({
               <span>{t("home")}</span>
             </Link>
 
+            {!user ? (
+              <>
             <p className="px-3 pt-2 pb-1 text-xs font-bold uppercase tracking-wider text-quizlet-slate-muted">
               {t("forStudents")}
             </p>
@@ -286,17 +289,30 @@ export function MobileDrawer({
                 {t("comingSoon")}
               </span>
             </Link>
+              </>
+            ) : null}
 
-            {/* Thư viện chỉ hiện khi đã đăng nhập */}
+            {/* Thư viện + Tiến độ chỉ hiện khi đã đăng nhập */}
             {user ? (
-              <Link
-                href="/progress"
-                onClick={onClose}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-quizlet-canvas hover:text-quizlet-indigo transition-colors"
-              >
-                <BookOpen className="w-4 h-4 text-quizlet-slate-secondary" />
-                <span>{t("library")}</span>
-              </Link>
+              <>
+                <Link
+                  href="/library"
+                  onClick={onClose}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-quizlet-canvas hover:text-quizlet-indigo transition-colors"
+                >
+                  <BookOpen className="w-4 h-4 text-quizlet-slate-secondary" />
+                  <span>{t("library")}</span>
+                </Link>
+                <Link
+                  href="/progress"
+                  onClick={onClose}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-quizlet-canvas hover:text-quizlet-indigo transition-colors"
+                  data-testid="mobile-drawer-progress"
+                >
+                  <BarChart3 className="w-4 h-4 text-quizlet-indigo" />
+                  <span>{t("progress")}</span>
+                </Link>
+              </>
             ) : null}
           </nav>
 
@@ -367,15 +383,19 @@ export function MobileDrawer({
             </>
           ) : (
             <div className="flex flex-col gap-2">
-              <Link href="/login" onClick={onClose}>
-                <Button size="sm" variant="ghost" fullWidth>
-                  {t("login")}
-                </Button>
+              <Link
+                href="/login"
+                onClick={onClose}
+                className="inline-flex items-center justify-center select-none font-semibold transition-all duration-200 outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-quizlet-border-hover disabled:opacity-50 px-4 py-2.5 text-sm rounded-xl gap-2 w-full bg-transparent text-quizlet-slate border border-transparent hover:bg-quizlet-canvas hover:text-quizlet-indigo active:bg-quizlet-border-light"
+              >
+                {t("login")}
               </Link>
-              <Link href="/signup" onClick={onClose}>
-                <Button size="sm" variant="primary" fullWidth>
-                  {t("signup")}
-                </Button>
+              <Link
+                href="/signup"
+                onClick={onClose}
+                className="inline-flex items-center justify-center select-none font-semibold transition-all duration-200 outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-quizlet-indigo disabled:opacity-50 px-4 py-2.5 text-sm rounded-xl gap-2 w-full bg-quizlet-indigo text-white hover:bg-quizlet-indigo-hover shadow-sm border border-transparent active:scale-[0.98]"
+              >
+                {t("signup")}
               </Link>
             </div>
           )}

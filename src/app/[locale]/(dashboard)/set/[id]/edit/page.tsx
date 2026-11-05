@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { apiGetStudySet, apiUpdateStudySet } from "@/lib/api/studySets";

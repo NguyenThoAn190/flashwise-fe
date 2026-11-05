@@ -3,7 +3,7 @@
  * Zero-dependency web-standard fetch implementation, fully compatible with Next.js 15 App Router & Vitest.
  */
 
-import { getApiBaseUrl, DEFAULT_HEADERS, API_ENDPOINTS } from "./config";
+import { getApiBaseUrl, DEFAULT_HEADERS, API_ENDPOINTS, getOutgoingBcp47, getOutgoingLocaleShort } from "./config";
 import { getAccessToken, getRefreshToken, setTokens, clearTokens } from "./storage";
 import { ApiError, StandardResponse, ErrorResponse } from "@/types/api";
 import { TokenResponse } from "@/types/auth";
@@ -80,8 +80,10 @@ export class ApiClient {
       refresh_token: refreshToken,
     };
 
-    // Try /auth/refresh first, fallback to /auth/token
-    const refreshEndpoints = [API_ENDPOINTS.auth.refresh, API_ENDPOINTS.auth.token];
+    // Gateway chỉ expose POST /auth/token (grant_type=refresh_token).
+    // Alias /auth/refresh được giữ để tương thích ngược, nhưng luôn ưu tiên
+    // /auth/token trước để tránh 1 lần 404 NOT_FOUND mỗi khi renew session.
+    const refreshEndpoints = [API_ENDPOINTS.auth.token, API_ENDPOINTS.auth.refresh];
     let lastError: unknown = null;
 
     for (const endpoint of refreshEndpoints) {
@@ -91,6 +93,9 @@ export class ApiClient {
           method: "POST",
           headers: {
             ...DEFAULT_HEADERS,
+            "Accept-Language": getOutgoingBcp47(),
+            "X-Lang": getOutgoingLocaleShort(),
+            "X-PlayGrid-Client": "web-app",
           },
           body: JSON.stringify(payload),
         });
@@ -151,8 +156,13 @@ export class ApiClient {
     }
 
     // 2. Request Interceptor: Attach Standard & Auth Headers
+    // Always send locale negotiation headers: the Gateway ResolveLanguage
+    // honors X-Lang / X-Language / Accept-Language and falls back to `vi`,
+    // so without these, 404 bodies leak raw Vietnamese ("Không tìm thấy").
     const requestHeaders: Record<string, string> = {
       ...DEFAULT_HEADERS,
+      "Accept-Language": getOutgoingBcp47(),
+      "X-Lang": getOutgoingLocaleShort(),
       ...headers,
     };
 

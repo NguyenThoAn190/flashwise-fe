@@ -223,7 +223,12 @@ export async function apiGetStudySets(
     : [];
 
   const items = rawItems.map(normalizeStudySet);
-  const total = typeof rawRes?.total === "number" ? rawRes.total : items.length;
+  const total =
+    typeof rawRes?.pagination?.total === "number"
+      ? rawRes.pagination.total
+      : typeof rawRes?.total === "number"
+      ? rawRes.total
+      : items.length;
 
   return {
     items,

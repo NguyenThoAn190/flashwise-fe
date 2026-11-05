@@ -53,7 +53,7 @@ describe("Milestones 5 & 6: Creator, Bulk Import, Adaptive Learn & Progress", ()
       password: "Password123!",
     });
     window.localStorage.setItem(
-      "quizlet_access_token",
+      "flashwise_access_token",
       loginRes.data.access_token
     );
   });
@@ -319,7 +319,7 @@ describe("Milestones 5 & 6: Creator, Bulk Import, Adaptive Learn & Progress", ()
     });
   });
 
-  it("6.8 [Progress & Spaced Repetition Mastery]: shows knowledge distributions and supports progress reset", async () => {
+  it("6.8 [Progress & Spaced Repetition Mastery]: shows knowledge distributions", async () => {
     render(
       <AuthProvider>
         <ProgressPage />
@@ -333,15 +333,9 @@ describe("Milestones 5 & 6: Creator, Bulk Import, Adaptive Learn & Progress", ()
     expect(screen.getByTestId("progress-mastered-count")).toBeInTheDocument();
     expect(screen.getByTestId("progress-due-count")).toBeInTheDocument();
 
-    // Open Reset Dialog
-    fireEvent.click(screen.getByTestId("reset-progress-btn"));
-    expect(screen.getByTestId("confirm-reset-progress-btn")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByTestId("confirm-reset-progress-btn"));
-
-    await waitFor(() => {
-      expect(screen.queryByTestId("confirm-reset-progress-btn")).toBeNull();
-    });
+    // Reset affordance was removed from the progress page on purpose.
+    expect(screen.queryByTestId("reset-progress-btn")).toBeNull();
+    expect(screen.queryByTestId("confirm-reset-progress-btn")).toBeNull();
   });
 });
 

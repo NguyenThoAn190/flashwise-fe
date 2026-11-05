@@ -203,15 +203,14 @@ describe("Milestone 3 - Dashboard Views, Cards & Review Banners", () => {
       expect(handleClear).toHaveBeenCalledTimes(1);
     });
 
-    it("renders contextual copy for starred filter tab", () => {
-      render(<EmptyStudySets filter="starred" />);
-      expect(screen.getByText("No starred sets yet")).toBeInTheDocument();
-      expect(screen.getByTestId("empty-create-set-button")).toBeInTheDocument();
-    });
-
     it("renders contextual copy for created sets tab (filter='mine')", () => {
       render(<EmptyStudySets filter="mine" />);
       expect(screen.getByText("You haven't created any study sets")).toBeInTheDocument();
+    });
+
+    it("renders contextual copy for recent tab (filter='recent')", () => {
+      render(<EmptyStudySets filter="recent" />);
+      expect(screen.getByText("No recently studied sets")).toBeInTheDocument();
     });
   });
 
@@ -281,27 +280,27 @@ describe("Milestone 3 - Dashboard Views, Cards & Review Banners", () => {
 
       await waitFor(() => {
         expect(studySetsApi.apiGetStudySets).toHaveBeenCalledWith(
-          expect.objectContaining({ filter: "recent" })
-        );
-      });
-
-      // Click "Created" tab
-      const createdTab = screen.getByTestId("tab-created");
-      fireEvent.click(createdTab);
-
-      await waitFor(() => {
-        expect(studySetsApi.apiGetStudySets).toHaveBeenCalledWith(
           expect.objectContaining({ filter: "mine" })
         );
       });
 
-      // Click "Starred" tab
-      const starredTab = screen.getByTestId("tab-starred");
-      fireEvent.click(starredTab);
+      // Click "Recent" tab
+      const recentTab = screen.getByTestId("tab-recent");
+      fireEvent.click(recentTab);
 
       await waitFor(() => {
         expect(studySetsApi.apiGetStudySets).toHaveBeenCalledWith(
-          expect.objectContaining({ filter: "starred" })
+          expect.objectContaining({ filter: "recent" })
+        );
+      });
+
+      // Click "All" tab
+      const allTab = screen.getByTestId("tab-all");
+      fireEvent.click(allTab);
+
+      await waitFor(() => {
+        expect(studySetsApi.apiGetStudySets).toHaveBeenCalledWith(
+          expect.objectContaining({ filter: "all" })
         );
       });
     });
@@ -374,7 +373,7 @@ describe("Milestone 3 - Dashboard Views, Cards & Review Banners", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("empty-study-sets")).toBeInTheDocument();
-        expect(screen.getByText("No recently studied sets")).toBeInTheDocument();
+        expect(screen.getByText("You haven't created any study sets")).toBeInTheDocument();
       });
     });
 

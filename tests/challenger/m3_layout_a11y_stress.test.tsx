@@ -775,16 +775,15 @@ describe("Milestone 3 Empirical Challenger: Layout, Accessibility, Event Isolati
 
       render(<DashboardPage />);
 
-      // Initial tab is "recent"
+      // Initial tab is "mine"
       await waitFor(() => {
         expect(studySetsApi.apiGetStudySets).toHaveBeenCalledWith(
-          expect.objectContaining({ filter: "recent" })
+          expect.objectContaining({ filter: "mine" })
         );
       });
 
-      // Rapidly click created, starred, all, and recent tabs
-      fireEvent.click(screen.getByTestId("tab-created"));
-      fireEvent.click(screen.getByTestId("tab-starred"));
+      // Rapidly click recent and all tabs
+      fireEvent.click(screen.getByTestId("tab-recent"));
       fireEvent.click(screen.getByTestId("tab-all"));
 
       await waitFor(() => {
@@ -829,14 +828,14 @@ describe("Milestone 3 Empirical Challenger: Layout, Accessibility, Event Isolati
     });
 
     it("renders contextual empty states for different filter tabs and queries", () => {
-      // 1. Starred empty state
-      const { rerender } = render(<EmptyStudySets filter="starred" />);
-      expect(screen.getByText("No starred sets yet")).toBeInTheDocument();
+      // 1. Created (mine) empty state
+      const { rerender } = render(<EmptyStudySets filter="mine" />);
+      expect(screen.getByText("You haven't created any study sets")).toBeInTheDocument();
       expect(screen.getByTestId("empty-create-set-button")).toBeInTheDocument();
 
-      // 2. Created (mine) empty state
-      rerender(<EmptyStudySets filter="mine" />);
-      expect(screen.getByText("You haven't created any study sets")).toBeInTheDocument();
+      // 2. Recent empty state
+      rerender(<EmptyStudySets filter="recent" />);
+      expect(screen.getByText("No recently studied sets")).toBeInTheDocument();
 
       // 3. Search query empty state with Clear search button
       const handleClear = vi.fn();
@@ -894,7 +893,7 @@ describe("Milestone 3 Empirical Challenger: Layout, Accessibility, Event Isolati
       });
     });
 
-    it("removes unstarred set immediately when in 'starred' tab", async () => {
+    it("keeps unstarred set visible after toggle (no starred-tab auto-removal)", async () => {
       vi.mocked(studySetsApi.apiGetStudySets).mockResolvedValue({
         items: [
           {
@@ -911,10 +910,6 @@ describe("Milestone 3 Empirical Challenger: Layout, Accessibility, Event Isolati
 
       render(<DashboardPage />);
 
-      // Switch to Starred tab
-      const starredTab = screen.getByTestId("tab-starred");
-      fireEvent.click(starredTab);
-
       await waitFor(() => {
         expect(screen.getByText("Neuroscience 201")).toBeInTheDocument();
       });
@@ -922,10 +917,10 @@ describe("Milestone 3 Empirical Challenger: Layout, Accessibility, Event Isolati
       const starBtn = screen.getByTestId("study-set-star-button");
       fireEvent.click(starBtn);
 
-      // Card should be removed from view and empty state shown
+      // Card should stay visible with updated star state (no starred-tab auto-removal)
       await waitFor(() => {
-        expect(screen.queryByText("Neuroscience 201")).not.toBeInTheDocument();
-        expect(screen.getByTestId("empty-study-sets")).toBeInTheDocument();
+        expect(screen.getByText("Neuroscience 201")).toBeInTheDocument();
+        expect(starBtn).toHaveAttribute("aria-label", "Star study set");
       });
     });
 

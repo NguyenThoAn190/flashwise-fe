@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Star } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { StudySet } from "@/types/studySet";
@@ -17,14 +18,16 @@ export function StudySetCard({
   onToggleStar,
   className,
 }: StudySetCardProps) {
+  const t = useTranslations("sets");
+  const tCommon = useTranslations("common");
   const cardCount = studySet.card_count ?? studySet.total_cards ?? studySet.cards?.length ?? 0;
-  const termLabel = cardCount === 1 ? "1 term" : `${cardCount} terms`;
+  const termLabel = t("terms", { count: cardCount });
 
   const creatorName =
     studySet.creator?.name ||
     studySet.creator_name ||
     studySet.owner?.name ||
-    "Anonymous";
+    tCommon("anonymous");
 
   const creatorAvatar =
     studySet.creator?.avatar_url ||
@@ -62,8 +65,10 @@ export function StudySetCard({
           <button
             type="button"
             onClick={handleStarClick}
-            aria-label={studySet.is_starred ? "Remove star from study set" : "Star study set"}
-            className="p-1.5 -mr-1.5 -mt-1 rounded-full text-quizlet-slate-muted hover:text-quizlet-gold hover:bg-quizlet-canvas transition-colors cursor-pointer"
+            disabled={!onToggleStar}
+            aria-label={studySet.is_starred ? t("unstar") : t("star")}
+            aria-pressed={studySet.is_starred}
+            className="p-1.5 -mr-1.5 -mt-1 rounded-full text-quizlet-slate-muted hover:text-quizlet-gold hover:bg-quizlet-canvas transition-colors cursor-pointer disabled:cursor-default disabled:opacity-60 disabled:hover:text-quizlet-slate-muted disabled:hover:bg-transparent"
             data-testid="study-set-star-button"
           >
             <Star

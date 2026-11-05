@@ -17,9 +17,8 @@ import { Button } from "@/components/ui/Button";
 import { Plus, Flame, Search, X, AlertCircle, RefreshCw } from "lucide-react";
 
 const TABS: Array<{ key: StudySetFilter; labelKey: string; testId: string }> = [
-  { key: "recent", labelKey: "tabRecent", testId: "tab-recent" },
   { key: "mine", labelKey: "tabCreated", testId: "tab-created" },
-  { key: "starred", labelKey: "tabStarred", testId: "tab-starred" },
+  { key: "recent", labelKey: "tabRecent", testId: "tab-recent" },
   { key: "all", labelKey: "tabAll", testId: "tab-all" },
 ];
 
@@ -29,7 +28,7 @@ export function DashboardHome() {
   const searchParams = useSearchParams();
   const initialSearch = searchParams.get("search") || "";
 
-  const [activeTab, setActiveTab] = useState<StudySetFilter>("recent");
+  const [activeTab, setActiveTab] = useState<StudySetFilter>("mine");
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [studySets, setStudySets] = useState<StudySet[]>([]);
   const [dueReviews, setDueReviews] = useState<DueReviewsSummary | null>(null);
@@ -96,9 +95,6 @@ export function DashboardHome() {
 
     try {
       await apiUpdateStudySet(id, { is_starred: nextStarred });
-      if (activeTab === "starred" && !nextStarred) {
-        setStudySets((prev) => prev.filter((set) => set.id !== id));
-      }
     } catch {
       setStudySets((prev) =>
         prev.map((set) => (set.id === id ? { ...set, is_starred: !nextStarred } : set))

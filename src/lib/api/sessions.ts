@@ -97,9 +97,37 @@ export interface ProgressOverview {
   not_studied: number;
   learning: number;
   reviewing: number;
+  familiar?: number;
   mastered: number;
   due_reviews_count: number;
   accuracy_rate: number;
+  average_mastery?: number;
+}
+
+interface GatewayOverallProgress {
+  user_id?: string;
+  total_cards?: number;
+  not_studied_count?: number;
+  not_studied?: number;
+  learning_count?: number;
+  learning?: number;
+  familiar_count?: number;
+  familiar?: number;
+  reviewing_count?: number;
+  reviewing?: number;
+  mastered_count?: number;
+  mastered?: number;
+  due_reviews_count?: number;
+  due_count?: number;
+  total_due?: number;
+  accuracy_rate?: number;
+  average_mastery?: number;
+}
+
+interface GatewayResetResult {
+  reset?: boolean;
+  success?: boolean;
+  message?: string;
 }
 
 /**
@@ -299,32 +327,67 @@ export async function apiCompleteSession(
 }
 
 /**
- * Fetches global or set-level mastery progress overview
+ * Fetches the global mastery progress overview.
+ * Contract: Gateway GET /api/v1/quizlet/users/me/progress -> OverallProgressSummary
+ * (total_cards, not_studied_count, learning_count, familiar_count,
+ * reviewing_count, mastered_count, due_reviews_count, accuracy_rate).
+ * FE "Reviewing / Familiar" displays reviewing_count + familiar_count.
+ * accuracy_rate is mastered/total*100 (mastery rate), 0 when total is 0.
  */
 export async function apiGetProgress(): Promise<ProgressOverview> {
-  const rawRes = await apiClient.get<any>(API_ENDPOINTS.progress.overview);
+  const rawRes = await apiClient.get<GatewayOverallProgress>(
+    API_ENDPOINTS.progress.overview
+  );
+  const familiar = Number(rawRes?.familiar_count ?? rawRes?.familiar ?? 0);
+  const reviewingOnly = Number(rawRes?.reviewing_count ?? rawRes?.reviewing ?? 0);
   return {
     total_cards: Number(rawRes?.total_cards ?? 0),
-    not_studied: Number(rawRes?.not_studied ?? 0),
-    learning: Number(rawRes?.learning ?? 0),
-    reviewing: Number(rawRes?.reviewing ?? 0),
-    mastered: Number(rawRes?.mastered ?? 0),
-    due_reviews_count: Number(rawRes?.due_reviews_count ?? rawRes?.due_count ?? 0),
+    not_studied: Number(
+      rawRes?.not_studied_count ?? rawRes?.not_studied ?? 0
+    ),
+    learning: Number(rawRes?.learning_count ?? rawRes?.learning ?? 0),
+    reviewing: reviewingOnly + familiar,
+    familiar,
+    mastered: Number(rawRes?.mastered_count ?? rawRes?.mastered ?? 0),
+    due_reviews_count: Number(
+      rawRes?.due_reviews_count ?? rawRes?.due_count ?? rawRes?.total_due ?? 0
+    ),
     accuracy_rate: Number(rawRes?.accuracy_rate ?? 0),
+    average_mastery:
+      rawRes?.average_mastery !== undefined
+        ? Number(rawRes.average_mastery)
+        : undefined,
   };
 }
 
 /**
- * Resets card progress (all sets or a specific study set)
+ * Resets card progress. Empty studySetId performs an explicit global reset
+ * via POST /api/v1/quizlet/users/me/progress/reset; non-empty scopes to one
+ * set via POST /api/v1/quizlet/study-sets/:id/progress/reset.
+ * Missing success fields are treated as failure (no `?? true` fallback).
  */
 export async function apiResetProgress(
   studySetId?: string
 ): Promise<{ success: boolean; message?: string }> {
-  const rawRes = await apiClient.post<any>(API_ENDPOINTS.progress.reset, {
-    study_set_id: studySetId,
-  });
-  return {
-    success: Boolean(rawRes?.success ?? rawRes?.reset ?? true),
-    message: rawRes?.message,
-  };
+  const normalizedSetId = studySetId?.trim() || undefined;
+  if (normalizedSetId) {
+    const rawRes = await apiClient.post<GatewayResetResult>(
+      API_ENDPOINTS.studySets.resetProgress(normalizedSetId),
+      {}
+    );
+    const success = Boolean(rawRes?.success ?? rawRes?.reset ?? false);
+    if (!success) {
+      throw new Error("Failed to reset progress.");
+    }
+    return { success, message: rawRes?.message };
+  }
+  const rawRes = await apiClient.post<GatewayResetResult>(
+    API_ENDPOINTS.progress.reset,
+    {}
+  );
+  const success = Boolean(rawRes?.success ?? rawRes?.reset ?? false);
+  if (!success) {
+    throw new Error("Failed to reset progress.");
+  }
+  return { success, message: rawRes?.message };
 }

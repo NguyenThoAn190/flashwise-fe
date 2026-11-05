@@ -5,6 +5,7 @@ export type InputSize = "sm" | "md" | "lg";
 
 export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> {
   label?: string;
+  labelClassName?: string;
   error?: string | boolean;
   helperText?: string;
   startIcon?: React.ReactNode;
@@ -23,6 +24,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     {
       className,
       label,
+      labelClassName,
       error,
       helperText,
       startIcon,
@@ -44,7 +46,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={id}
-            className="block text-xs font-bold uppercase tracking-wider text-quizlet-slate-secondary mb-1.5 select-none"
+            className={cn(
+              "block text-xs font-bold uppercase tracking-wider text-quizlet-slate-secondary mb-1.5 select-none",
+              labelClassName
+            )}
           >
             {label}
           </label>

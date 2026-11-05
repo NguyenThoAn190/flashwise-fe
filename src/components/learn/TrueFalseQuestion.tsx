@@ -6,6 +6,10 @@ export interface TrueFalseQuestionProps {
   prompt: string;
   proposedDefinition: string;
   disabled?: boolean;
+  /** Lựa chọn user vừa bấm. Truyền khi đã có feedback để highlight inline. */
+  selectedChoice?: boolean | null;
+  /** Đáp án đúng. Truyền khi đã có feedback để highlight inline. */
+  correctChoice?: boolean | null;
   onAnswer: (choice: boolean) => void;
 }
 
@@ -13,6 +17,8 @@ export function TrueFalseQuestion({
   prompt,
   proposedDefinition,
   disabled = false,
+  selectedChoice = null,
+  correctChoice = null,
   onAnswer,
 }: TrueFalseQuestionProps) {
   useEffect(() => {
@@ -78,33 +84,48 @@ export function TrueFalseQuestion({
         </p>
 
         <div className="grid grid-cols-2 gap-4">
-          <button
-            type="button"
-            disabled={disabled}
-            data-testid="tf-option-true"
-            onClick={() => onAnswer(true)}
-            className="p-4 rounded-xl border-2 border-quizlet-border bg-quizlet-surface hover:border-quizlet-indigo hover:bg-quizlet-indigo-light/40 disabled:opacity-60 transition-all flex items-center gap-3 cursor-pointer"
-          >
-            <span className="w-6 h-6 rounded-md bg-quizlet-canvas border border-quizlet-border text-xs font-bold text-quizlet-slate-secondary flex items-center justify-center">
-              1
-            </span>
-            <span className="text-base font-bold text-quizlet-slate">True</span>
-          </button>
-
-          <button
-            type="button"
-            disabled={disabled}
-            data-testid="tf-option-false"
-            onClick={() => onAnswer(false)}
-            className="p-4 rounded-xl border-2 border-quizlet-border bg-quizlet-surface hover:border-quizlet-indigo hover:bg-quizlet-indigo-light/40 disabled:opacity-60 transition-all flex items-center gap-3 cursor-pointer"
-          >
-            <span className="w-6 h-6 rounded-md bg-quizlet-canvas border border-quizlet-border text-xs font-bold text-quizlet-slate-secondary flex items-center justify-center">
-              2
-            </span>
-            <span className="text-base font-bold text-quizlet-slate">
-              False
-            </span>
-          </button>
+          {(
+            [
+              { value: true, testId: "tf-option-true", label: "True", num: "1" },
+              { value: false, testId: "tf-option-false", label: "False", num: "2" },
+            ] as const
+          ).map((opt) => {
+            const isRevealed = selectedChoice != null && correctChoice != null;
+            const isCorrectOption = isRevealed && opt.value === correctChoice;
+            const isWrongSelected =
+              isRevealed && opt.value === selectedChoice && selectedChoice !== correctChoice;
+            return (
+              <button
+                key={opt.testId}
+                type="button"
+                disabled={disabled}
+                data-testid={opt.testId}
+                data-correct={isCorrectOption || undefined}
+                data-wrong={isWrongSelected || undefined}
+                onClick={() => onAnswer(opt.value)}
+                className={`p-4 rounded-xl border-2 transition-all flex items-center gap-3 cursor-pointer ${
+                  isCorrectOption
+                    ? "border-dashed border-quizlet-green bg-quizlet-green-bg disabled:opacity-100"
+                    : isWrongSelected
+                      ? "border-quizlet-coral bg-quizlet-coral-bg/60 disabled:opacity-100"
+                      : "border-quizlet-border bg-quizlet-surface hover:border-quizlet-indigo hover:bg-quizlet-indigo-light/40 disabled:opacity-60"
+                } disabled:pointer-events-none`}
+              >
+                <span
+                  className={`w-6 h-6 rounded-md border text-xs font-bold flex items-center justify-center ${
+                    isCorrectOption
+                      ? "bg-quizlet-green text-white border-quizlet-green"
+                      : isWrongSelected
+                        ? "bg-quizlet-coral text-white border-quizlet-coral"
+                        : "bg-quizlet-canvas border-quizlet-border text-quizlet-slate-secondary"
+                  }`}
+                >
+                  {opt.num}
+                </span>
+                <span className="text-base font-bold text-quizlet-slate">{opt.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
