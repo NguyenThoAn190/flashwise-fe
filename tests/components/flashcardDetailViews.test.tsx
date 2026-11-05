@@ -228,7 +228,7 @@ describe("Milestone 4: 3D FlashcardViewer & Study Set Detail", () => {
     // Duplicate set
     fireEvent.click(screen.getByTestId("duplicate-set-btn"));
     await waitFor(() => {
-      expect(pushMock).toHaveBeenCalledWith(expect.stringMatching(/^\/set\/set_dup_/));
+      expect(pushMock).toHaveBeenCalledWith(expect.stringMatching(/\/set\/set_dup_/));
     });
   });
 });

@@ -9,7 +9,53 @@ interface BeforeInstallPromptEvent extends Event {
 
 const DISMISS_KEY = "pwa-dismissed-at";
 const VISIT_KEY = "pwa-visit-count";
+const BUMP_SESSION_KEY = "pwa-visit-bumped-this-session";
 const DISMISS_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const MOBILE_MAX_WIDTH = 768;
+
+// ---------------------------------------------------------------------------
+// Cache module-level: Chrome chỉ bắn `beforeinstallprompt` 1 lần / page load.
+// Nếu listener gắn muộn (sau khi event đã bắn) hoặc component remount
+// (chuyển locale / client navigation) thì state trong hook sẽ mất prompt
+// -> banner "lúc hiện lúc không". Cache ở module + listener toàn cục gắn
+// ngay khi bundle client được load để không bao giờ miss event.
+// ---------------------------------------------------------------------------
+let cachedPrompt: BeforeInstallPromptEvent | null = null;
+let globalListenerAttached = false;
+const promptSubscribers = new Set<(p: BeforeInstallPromptEvent | null) => void>();
+
+function notifyPromptSubscribers() {
+  promptSubscribers.forEach((cb) => {
+    try {
+      cb(cachedPrompt);
+    } catch {
+      // Bỏ qua lỗi subscriber lẻ.
+    }
+  });
+}
+
+function attachGlobalPromptListener() {
+  if (globalListenerAttached || typeof window === "undefined") return;
+  globalListenerAttached = true;
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    cachedPrompt = e as BeforeInstallPromptEvent;
+    notifyPromptSubscribers();
+  });
+  window.addEventListener("appinstalled", () => {
+    cachedPrompt = null;
+    notifyPromptSubscribers();
+  });
+}
+
+if (typeof window !== "undefined") {
+  attachGlobalPromptListener();
+}
+
+/** Chỉ dùng cho test: xóa prompt đã cache giữa các test để không rò rỉ. */
+export function __resetPWAInstallForTests() {
+  cachedPrompt = null;
+}
 
 function isStandalone(): boolean {
   if (typeof window === "undefined") return false;
@@ -34,57 +80,107 @@ function shouldSuppressByDismiss(): boolean {
   }
 }
 
-function bumpVisitCount(): number {
+/**
+ * Mỗi tab session chỉ bump 1 lần. Tránh 2 nguồn flaky:
+ * - StrictMode double-effect ở dev làm visit +2 / load.
+ * - Client navigation remount layout làm visit tăng dù không phải visit mới.
+ */
+function bumpVisitOncePerSession(): number {
   try {
+    if (sessionStorage.getItem(BUMP_SESSION_KEY)) {
+      return Number(localStorage.getItem(VISIT_KEY) || "0");
+    }
     const next = Number(localStorage.getItem(VISIT_KEY) || "0") + 1;
     localStorage.setItem(VISIT_KEY, String(next));
+    sessionStorage.setItem(BUMP_SESSION_KEY, "1");
     return next;
   } catch {
     return 2;
   }
 }
 
+function isMobileViewport(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.innerWidth < MOBILE_MAX_WIDTH;
+}
+
 export function usePWAInstall() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  // Khởi tạo từ cache để hứng event đã bắn trước khi mount.
+  const [prompt, setPrompt] = useState<BeforeInstallPromptEvent | null>(() => cachedPrompt);
   const [visible, setVisible] = useState(false);
   const [platform, setPlatform] = useState<"android" | "ios" | "other">("other");
 
-  useEffect(() => {
-    if (isStandalone() || shouldSuppressByDismiss()) return;
-
-    const visits = bumpVisitCount();
+  const recompute = useCallback((p: BeforeInstallPromptEvent | null = cachedPrompt) => {
+    if (isStandalone() || shouldSuppressByDismiss()) {
+      setVisible(false);
+      return;
+    }
     // Chỉ hiện từ lượt visit thứ 2 để tránh làm phiền lần đầu.
-    if (visits < 2) return;
-
-    // Chỉ hiện trên mobile viewport.
-    if (window.innerWidth >= 768) return;
+    let visits = 2;
+    try {
+      visits = Number(localStorage.getItem(VISIT_KEY) || "0");
+    } catch {
+      // Không đọc được storage thì vẫn cho hiện để không kẹt ẩn vĩnh viễn.
+    }
+    if (visits < 2) {
+      setVisible(false);
+      return;
+    }
+    // Chỉ hiện trên mobile viewport (đồng bộ với class `md:hidden` của banner).
+    if (!isMobileViewport()) {
+      setVisible(false);
+      return;
+    }
 
     setPlatform(isIos() ? "ios" : "android");
 
-    const onBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setVisible(true);
-    };
-
-    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
-
     // iOS không có beforeinstallprompt: hiện hướng dẫn thủ công.
-    if (isIos()) {
-      setVisible(true);
+    // Android/Desktop Chromium: cần prompt đã cache mới hiện nút Install.
+    setVisible(isIos() ? true : p !== null);
+  }, []);
+
+  useEffect(() => {
+    bumpVisitOncePerSession();
+
+    const onPrompt = (p: BeforeInstallPromptEvent | null) => {
+      setPrompt(p);
+      recompute(p);
+    };
+    promptSubscribers.add(onPrompt);
+
+    // Viewport xoay / resize / kéo DevTools: tính lại thay vì kẹt trạng thái lúc mount.
+    const onResize = () => recompute();
+    window.addEventListener("resize", onResize);
+
+    // Cài xong (display-mode đổi sang standalone) thì ẩn banner.
+    const mq = window.matchMedia("(display-mode: standalone)");
+    const onDisplayChange = () => recompute();
+    if (typeof mq.addEventListener === "function") {
+      mq.addEventListener("change", onDisplayChange);
+    } else {
+      mq.addListener(onDisplayChange);
     }
 
-    const onAppInstalled = () => {
-      setVisible(false);
-      setDeferredPrompt(null);
+    // Dismiss ở tab khác cũng ẩn banner tab này.
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === DISMISS_KEY) recompute();
     };
-    window.addEventListener("appinstalled", onAppInstalled);
+    window.addEventListener("storage", onStorage);
+
+    setPrompt(cachedPrompt);
+    recompute();
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
-      window.removeEventListener("appinstalled", onAppInstalled);
+      promptSubscribers.delete(onPrompt);
+      window.removeEventListener("resize", onResize);
+      if (typeof mq.removeEventListener === "function") {
+        mq.removeEventListener("change", onDisplayChange);
+      } else {
+        mq.removeListener(onDisplayChange);
+      }
+      window.removeEventListener("storage", onStorage);
     };
-  }, []);
+  }, [recompute]);
 
   const dismiss = useCallback(() => {
     try {
@@ -96,17 +192,19 @@ export function usePWAInstall() {
   }, []);
 
   const install = useCallback(async () => {
-    if (deferredPrompt) {
-      await deferredPrompt.prompt();
-      const choice = await deferredPrompt.userChoice;
+    const p = cachedPrompt ?? prompt;
+    if (p) {
+      await p.prompt();
+      const choice = await p.userChoice;
       if (choice.outcome === "accepted") {
+        cachedPrompt = null;
+        setPrompt(null);
         setVisible(false);
-        setDeferredPrompt(null);
       }
       return choice.outcome;
     }
     return "dismissed" as const;
-  }, [deferredPrompt]);
+  }, [prompt]);
 
-  return { visible, platform, canPrompt: Boolean(deferredPrompt), install, dismiss };
+  return { visible, platform, canPrompt: prompt !== null, install, dismiss };
 }

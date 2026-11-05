@@ -19,6 +19,7 @@ import {
 import {
   login as apiLogin,
   loginWithGoogle as apiLoginWithGoogle,
+  loginWithGoogleCode as apiLoginWithGoogleCode,
   signup as apiSignup,
   signout as apiSignout,
   getProfile as apiGetProfile,
@@ -168,13 +169,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 
   /**
-   * Google Login Handler
+   * Google Login Handler (GIS id_token)
    */
   const loginGoogle = useCallback(
     async (idToken: string): Promise<UserProfile> => {
       setIsLoading(true);
       try {
         await apiLoginWithGoogle(idToken);
+        const profile = await apiGetProfile();
+        setUser(profile);
+        setCachedUser(profile);
+        return profile;
+      } catch (error) {
+        clearTokens();
+        setUser(null);
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
+
+  /**
+   * Google Login Handler (GIS popup auth-code).
+   * FE-only: backend `/auth/social/google` already accepts `auth_code`.
+   */
+  const loginGoogleCode = useCallback(
+    async (authCode: string): Promise<UserProfile> => {
+      setIsLoading(true);
+      try {
+        await apiLoginWithGoogleCode(authCode);
         const profile = await apiGetProfile();
         setUser(profile);
         setCachedUser(profile);
@@ -256,11 +281,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isLoading,
       login,
       loginGoogle,
+      loginGoogleCode,
       signup,
       logout,
       refreshProfile,
     }),
-    [user, isAuthenticated, isLoading, login, loginGoogle, signup, logout, refreshProfile]
+    [user, isAuthenticated, isLoading, login, loginGoogle, loginGoogleCode, signup, logout, refreshProfile]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

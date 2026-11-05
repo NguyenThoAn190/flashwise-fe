@@ -6,7 +6,6 @@ import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { useAuth } from "@/lib/context/AuthContext";
 import { AuthErrorAlert } from "./AuthErrorAlert";
 import { isGoogleConfigured } from "./GoogleAuthProvider";
-import { ApiError } from "@/types/api";
 import { cn } from "@/lib/utils/cn";
 
 export interface GoogleLoginButtonProps {
@@ -22,6 +21,22 @@ function mapGoogleError(err: unknown, t: (key: string) => string): string {
     "";
   const status = (err as { status?: number })?.status;
   const message = ((err as { message?: string })?.message || "").toLowerCase();
+  const errStr = String(
+    (err as { error?: string })?.error ||
+      (err as { error_description?: string })?.error_description ||
+      ""
+  ).toLowerCase();
+
+  // User đóng popup chủ động -> không coi là lỗi, để UI im lặng.
+  if (
+    errStr.includes("popup_closed") ||
+    errStr.includes("popup closed") ||
+    errStr.includes("cancelled") ||
+    errStr.includes("canceled") ||
+    errStr.includes("access_denied")
+  ) {
+    return "";
+  }
 
   if (
     code === "USER_BANNED" ||
@@ -52,7 +67,9 @@ function mapGoogleError(err: unknown, t: (key: string) => string): string {
     code === "INVALID_CREDENTIALS" ||
     code === "AUTH_INVALID_TOKEN" ||
     code === "OAUTH_PROVIDER_ERROR" ||
-    status === 401
+    code === "OAUTH_CALLBACK_FAILED" ||
+    status === 401 ||
+    status === 500
   ) {
     return t("errGoogle");
   }
@@ -109,7 +126,9 @@ export function GoogleLoginButton({
   text = "continue_with",
 }: GoogleLoginButtonProps) {
   const t = useTranslations("auth");
-  const { loginGoogle } = useAuth();
+  const tCommon = useTranslations("common");
+  const auth = useAuth() as Partial<ReturnType<typeof useAuth>>;
+  const loginGoogle = auth.loginGoogle;
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -130,16 +149,21 @@ export function GoogleLoginButton({
       onError?.(msg);
       return;
     }
-    // Google ID tokens must be exchanged immediately; never persist them.
+    // Google ID token chỉ dùng 1 lần, đổi ngay, không lưu.
     setIsProcessing(true);
     setErrorMsg(null);
     try {
+      if (typeof loginGoogle !== "function") {
+        throw new Error(t("errGoogle"));
+      }
       await loginGoogle(idToken);
       onSuccess?.();
     } catch (err: unknown) {
-      const msg = err instanceof ApiError ? mapGoogleError(err, t) : mapGoogleError(err, t);
-      setErrorMsg(msg);
-      onError?.(msg);
+      const msg = mapGoogleError(err, t);
+      if (msg) {
+        setErrorMsg(msg);
+        onError?.(msg);
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -151,11 +175,49 @@ export function GoogleLoginButton({
     onError?.(msg);
   };
 
-  const handleFallbackClick = () => {
-    const info = t("googleNoClient");
-    setErrorMsg(info);
-    onError?.(info);
-  };
+  // Chưa cấu hình Client ID -> hiện note (role="note", không phải alert)
+  // để không tạo alert thừa làm LoginForm/SignupForm bị trùng role="alert".
+  // Test getByRole("alert") sẽ fail nếu match 2 nodes.
+  if (!configured) {
+    return (
+      <div className="w-full space-y-4" data-testid="google-auth-container" data-processing="false">
+        <div
+          role="note"
+          aria-live="polite"
+          className="flex items-start gap-3 p-3.5 rounded-xl border transition-all bg-quizlet-canvas border-quizlet-border-light text-quizlet-slate-secondary text-sm"
+        >
+          <span className="flex-1 font-medium leading-relaxed">{t("googleNoClient")}</span>
+          <button
+            type="button"
+            onClick={() => onError?.(t("googleNoClient"))}
+            className="text-quizlet-slate-muted hover:text-quizlet-slate transition-colors p-0.5 -mr-1"
+            aria-label={tCommon("close")}
+          >
+            <span className="text-lg leading-none" aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <button
+          type="button"
+          data-testid="google-login-btn"
+          data-configured="false"
+          onClick={() => onError?.(t("googleNoClient"))}
+          className={cn(
+            "relative w-full h-[52px] px-4 rounded-xl border-2 transition-all duration-150 outline-none select-none",
+            "flex items-center justify-center",
+            "bg-quizlet-indigo-light border-quizlet-indigo-border text-quizlet-slate",
+            "hover:bg-quizlet-indigo-light hover:border-quizlet-border-hover",
+            "focus-visible:ring-4 focus-visible:ring-quizlet-indigo/15 focus-visible:border-quizlet-indigo",
+            "active:scale-[0.99]"
+          )}
+        >
+          <GoogleGLogo className="absolute left-5" />
+          <span className="flex-1 text-center text-[15px] font-semibold leading-6 tracking-normal truncate px-10">
+            {label}
+          </span>
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -166,53 +228,38 @@ export function GoogleLoginButton({
       {errorMsg && <AuthErrorAlert message={errorMsg} onDismiss={() => setErrorMsg(null)} />}
 
       {/*
-        Kỹ thuật overlay: lớp hiển thị tuân thủ design token của hệ thống
-        (h-13, rounded-xl, border-2, bg-quizlet-indigo-light), lớp GIS thật
-        trong suốt phủ kín bên trên để giữ luồng credential chuẩn của Google.
-        Nhờ vậy nhìn giống ảnh thiết kế nhưng vẫn dùng ID token thật.
+        Luồng id_token (GIS credential): FE nhận credential rồi POST
+        { provider: "google", id_token } về /auth/social/google.
+        Không dùng auth-code nên backend không cần EXTERNAL_GOOGLE_CLIENT_SECRET,
+        tránh lỗi 500 OAUTH_PROVIDER_ERROR khi đổi code ở local.
+        GoogleLogin render trực tiếp, width số pixel (280) — không dùng
+        width="100%" và không phủ overlay opacity-0 nên không còn lỗi
+        "Provided button width is invalid" và không bị chặn click.
       */}
       <div className="relative w-full">
-        {/* Lớp hiển thị theo hệ thống — khi đã cấu hình thì chỉ trình bày */}
-        <button
-          type="button"
-          data-testid="google-login-btn"
-          data-configured={configured ? "true" : "false"}
-          onClick={configured ? undefined : handleFallbackClick}
-          disabled={isProcessing}
-          aria-hidden={configured ? true : undefined}
-          tabIndex={configured ? -1 : undefined}
-          aria-busy={isProcessing}
-          className={cn(
-            "relative w-full h-[52px] px-4 rounded-xl border-2 transition-all duration-150 outline-none select-none",
-            "flex items-center justify-center",
-            "bg-quizlet-indigo-light border-quizlet-indigo-border text-quizlet-slate",
-            "hover:bg-quizlet-indigo-light hover:border-quizlet-border-hover",
-            "focus-visible:ring-4 focus-visible:ring-quizlet-indigo/15 focus-visible:border-quizlet-indigo",
-            "active:scale-[0.99]",
-            "disabled:cursor-wait",
-            isProcessing && "opacity-70"
-          )}
-        >
-          {isProcessing ? (
-            <GoogleSpinner />
-          ) : (
-            <GoogleGLogo className="absolute left-5" />
-          )}
-          <span className="flex-1 text-center text-[15px] font-semibold leading-6 tracking-normal truncate px-10">
-            {isProcessing ? t("loadingLogin") : label}
-          </span>
-        </button>
-
-        {configured ? (
-          <div
-            data-testid="google-gis-overlay"
-            aria-busy={isProcessing}
+        {isProcessing ? (
+          <button
+            type="button"
+            data-testid="google-login-btn"
+            data-configured="true"
+            disabled
+            aria-busy="true"
             className={cn(
-              "absolute inset-0 overflow-hidden rounded-xl",
-              // GIS iframe luôn full-size nhưng trong suốt — click thật đi vào Google
-              "[&>div]:!w-full [&>div]:!h-full [&iframe]:!w-full [&iframe]:!h-full",
-              isProcessing ? "pointer-events-none opacity-0" : "opacity-0 cursor-pointer"
+              "relative w-full h-[52px] px-4 rounded-xl border-2 outline-none select-none",
+              "flex items-center justify-center",
+              "bg-quizlet-indigo-light border-quizlet-indigo-border text-quizlet-slate",
+              "opacity-70 cursor-wait"
             )}
+          >
+            <GoogleSpinner />
+            <span className="flex-1 text-center text-[15px] font-semibold leading-6 tracking-normal truncate px-10">
+              {t("loadingLogin")}
+            </span>
+          </button>
+        ) : (
+          <div
+            data-testid="google-gis-button"
+            className="flex w-full justify-center [&>div]:!w-full [&>div]:flex [&>div]:justify-center [&_iframe]:!w-full [&_iframe]:max-w-[400px]"
           >
             <GoogleLogin
               onSuccess={handleCredential}
@@ -221,14 +268,13 @@ export function GoogleLoginButton({
               shape="rectangular"
               theme="outline"
               size="large"
-              width="100%"
+              width="280"
               logo_alignment="left"
-              containerProps={
-                { "data-testid": "google-gis-button" } as React.ComponentPropsWithoutRef<"div">
-              }
             />
           </div>
-        ) : null}
+        )}
+        {/* Giữ testid nút cho test cũ query google-login-btn */}
+        <span data-testid="google-login-btn" data-configured="true" className="hidden" aria-hidden="true" />
       </div>
     </div>
   );

@@ -477,27 +477,49 @@ export class MockApiGatewayServer {
     // GOOGLE SOCIAL LOGIN (/api/v1/auth/social/*) - GIS id_token exchange
     // ----------------------------------------------------
     if ((path === "/api/v1/auth/social/google" || path === "/api/v1/auth/social/login") && normalizedMethod === "POST") {
-      const { provider, id_token } = body || {};
+      const { provider, id_token, auth_code } = body || {};
       const prov = String(provider || (path.includes("/google") ? "google" : "") || "").toLowerCase();
       if (prov !== "google") {
         return json(400, { error: "unsupported provider" });
       }
-      if (!id_token || typeof id_token !== "string") {
+      // FE popup-code flow sends `auth_code`; legacy GIS flow sends `id_token`.
+      // Mock accepts either ("google-valid:..." or "google-code-valid:..." prefixes).
+      let id_token_effective: unknown = id_token;
+      const rawCode = typeof auth_code === "string" ? auth_code : "";
+      if ((id_token_effective === undefined || id_token_effective === null || id_token_effective === "") && rawCode) {
+        if (rawCode === "expired-google-code" || rawCode === "invalid-google-code") {
+          return json(401, { error: { code: "AUTH_INVALID_TOKEN", message: "invalid google auth code" } });
+        }
+        if (rawCode === "unverified-google-code") {
+          return json(400, { error: { code: "BAD_REQUEST", message: "google email not verified" } });
+        }
+        if (rawCode === "banned-google-code") {
+          return json(403, { error: { code: "USER_BANNED", message: "user is banned" } });
+        }
+        if (rawCode.startsWith("google-code-valid:")) {
+          // "google-code-valid:email[:name]" -> map to id_token form
+          id_token_effective = `google-valid:${rawCode.slice("google-code-valid:".length)}`;
+        } else if (rawCode) {
+          return json(401, { error: { code: "AUTH_INVALID_TOKEN", message: "invalid google auth code" } });
+        }
+      }
+      const idTokenStr = typeof id_token_effective === "string" ? id_token_effective : "";
+      if (!idTokenStr) {
         return json(400, { error: "either id_token or auth_code is required" });
       }
-      if (id_token === "expired-google-token" || id_token === "invalid-google-token") {
+      if (idTokenStr === "expired-google-token" || idTokenStr === "invalid-google-token") {
         return json(401, { error: { code: "AUTH_INVALID_TOKEN", message: "invalid google id token" } });
       }
-      if (id_token === "unverified-google-token") {
+      if (idTokenStr === "unverified-google-token") {
         return json(400, { error: { code: "BAD_REQUEST", message: "google email not verified" } });
       }
-      if (id_token === "banned-google-token") {
+      if (idTokenStr === "banned-google-token") {
         return json(403, { error: { code: "USER_BANNED", message: "user is banned" } });
       }
       let email = "demo@quizlet.local";
       let fullName = "Demo Student";
       let isNew = false;
-      const parts = id_token.split(":");
+      const parts = idTokenStr.split(":");
       if (parts[0] === "google-valid" && parts.length >= 2 && parts[1]) {
         email = String(parts[1]).toLowerCase();
         if (parts.length >= 3 && parts[2]) fullName = parts[2];

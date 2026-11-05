@@ -101,6 +101,7 @@ export interface AuthState {
 export interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<UserProfile>;
   loginGoogle: (idToken: string) => Promise<UserProfile>;
+  loginGoogleCode: (authCode: string) => Promise<UserProfile>;
   signup: (data: SignupData) => Promise<UserProfile>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<UserProfile | null>;

@@ -87,4 +87,31 @@ describe("Tier 1 - Feature Coverage: Google Login (GIS id_token)", () => {
     expect(progress.status).toBe(200);
     expect(progress.ok).toBe(true);
   });
+
+  it("G7 [Google popup-code]: auth_code flow JIT-provisions and links same as id_token", async () => {
+    const codeLogin = await client.auth.loginGoogleCode(
+      "google-code-valid:newpopup@gmail.com:New Popup"
+    );
+    expect(codeLogin.status).toBe(200);
+    expect(codeLogin.data.is_new_user).toBe(true);
+    expect(codeLogin.data.user.email).toBe("newpopup@gmail.com");
+
+    const linkLogin = await client.auth.loginGoogleCode(
+      "google-code-valid:demo@quizlet.local:Demo Student"
+    );
+    expect(linkLogin.status).toBe(200);
+    expect(linkLogin.data.user.id).toBe("usr_demo_101");
+    expect(linkLogin.data.is_new_user).toBe(false);
+  });
+
+  it("G8 [Google popup-code]: invalid/expired codes rejected, valid token bodies kept", async () => {
+    for (const bad of ["invalid-google-code", "expired-google-code", ""]) {
+      const res = await client.auth.loginGoogleCode(bad);
+      expect([400, 401].includes(res.status)).toBe(true);
+      expect(res.ok).toBe(false);
+      expect(res.data?.access_token).toBeUndefined();
+    }
+    const banned = await client.auth.loginGoogleCode("banned-google-code");
+    expect(banned.status).toBe(403);
+  });
 });

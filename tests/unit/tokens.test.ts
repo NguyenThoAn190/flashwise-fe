@@ -170,7 +170,8 @@ describe("Flashwise Design Tokens & Environment", () => {
       expect(API_ENDPOINTS.sessions.start("456")).toBe("/quizlet/study-sets/456/sessions");
       expect(API_ENDPOINTS.sessions.next("sess-1")).toBe("/quizlet/sessions/sess-1/next");
       expect(API_ENDPOINTS.sessions.ratings("sess-1")).toBe("/quizlet/sessions/sess-1/ratings");
-      expect(API_ENDPOINTS.progress.overview).toBe("/progress");
+      expect(API_ENDPOINTS.progress.overview).toBe("/quizlet/users/me/progress");
+      expect(API_ENDPOINTS.progress.reset).toBe("/quizlet/users/me/progress/reset");
     });
   });
 });

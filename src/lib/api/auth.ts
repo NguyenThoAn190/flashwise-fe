@@ -89,6 +89,37 @@ export async function loginWithGoogle(idToken: string): Promise<TokenResponse> {
 }
 
 /**
+ * Logs in or signs up a user using a Google OAuth Authorization Code
+ * (GIS popup `auth-code` flow). FE-only change: backend `/auth/social/google`
+ * already accepts `auth_code` (popup UX ignores `redirect_uri`, so we omit it
+ * and let the server exchange with an empty redirect).
+ */
+export async function loginWithGoogleCode(authCode: string): Promise<TokenResponse> {
+  const payload = {
+    provider: "google",
+    auth_code: authCode,
+    channel: "web-app",
+  };
+
+  const response = await apiClient.post<TokenResponse & { user?: UserProfile }>(
+    API_ENDPOINTS.auth.socialGoogle,
+    payload,
+    { skipAuth: true }
+  );
+
+  const resObj = response as TokenResponse & { user?: UserProfile };
+  if (resObj?.access_token) {
+    setTokens(resObj.access_token, resObj.refresh_token);
+  }
+
+  if (resObj?.user) {
+    setCachedUser(resObj.user);
+  }
+
+  return response;
+}
+
+/**
  * Registers a new user account via email, password, and full name.
  * Automatically stores session tokens if returned by the Gateway.
  */

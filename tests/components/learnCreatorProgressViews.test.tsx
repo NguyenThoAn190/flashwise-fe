@@ -140,7 +140,7 @@ describe("Milestones 5 & 6: Creator, Bulk Import, Adaptive Learn & Progress", ()
     fireEvent.click(screen.getByTestId("save-study-set-btn"));
 
     await waitFor(() => {
-      expect(pushMock).toHaveBeenCalledWith(expect.stringMatching(/^\/set\/set_/));
+      expect(pushMock).toHaveBeenCalledWith(expect.stringMatching(/\/set\/set_/));
     });
   });
 

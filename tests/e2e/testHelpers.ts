@@ -144,6 +144,12 @@ export function createE2EClient(baseUrl: string = DEFAULT_API_URL, token?: strin
           method: "POST",
           body: { provider: "google", id_token: idToken, channel },
         }),
+      // FE popup-code flow: GIS `auth-code` -> backend exchange.
+      loginGoogleCode: (authCode: string, channel = "web-app") =>
+        request("/auth/social/google", {
+          method: "POST",
+          body: { provider: "google", auth_code: authCode, channel },
+        }),
       refresh: (payload: { refresh_token: string }) =>
         request("/auth/refresh", { method: "POST", body: payload }),
       signout: () =>

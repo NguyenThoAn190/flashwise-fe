@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { InstallAppBanner } from "@/components/pwa/InstallAppBanner";
+import { __resetPWAInstallForTests } from "@/components/pwa/usePWAInstall";
 
 function setMobileViewport(width = 390) {
   Object.defineProperty(window, "innerWidth", {
@@ -55,6 +56,8 @@ function fireBeforeInstallPrompt() {
 describe("PWA Install — usePWAInstall + InstallAppBanner", () => {
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
+    __resetPWAInstallForTests();
     setMobileViewport(390);
     setUserAgent(ANDROID_UA);
     setStandalone(false);
@@ -155,5 +158,33 @@ describe("PWA Install — usePWAInstall + InstallAppBanner", () => {
 
     fireEvent(window, new Event("appinstalled"));
     expect(screen.queryByTestId("pwa-install-banner")).not.toBeInTheDocument();
+  });
+
+  it("event bắn trước khi mount vẫn hiện banner (không miss prompt)", async () => {
+    localStorage.setItem("pwa-visit-count", "5");
+    // Event bắn trước khi component mount — logic cũ gắn listener trong
+    // effect nên miss event này, banner không bao giờ hiện.
+    fireBeforeInstallPrompt();
+
+    render(<InstallAppBanner />);
+    const banner = await screen.findByTestId("pwa-install-banner");
+    expect(banner).toBeInTheDocument();
+    expect(screen.getByTestId("pwa-install-button")).not.toBeDisabled();
+  });
+
+  it("remount trong cùng session không bump visit (không làm banner chập chờn)", async () => {
+    localStorage.setItem("pwa-visit-count", "1");
+    const { unmount } = render(<InstallAppBanner />);
+    expect(localStorage.getItem("pwa-visit-count")).toBe("2");
+
+    // Client navigation remount layout — visit không được tăng nữa.
+    unmount();
+    render(<InstallAppBanner />);
+    expect(localStorage.getItem("pwa-visit-count")).toBe("2");
+
+    // Prompt đến sau remount vẫn hiện banner ổn định.
+    fireBeforeInstallPrompt();
+    const banner = await screen.findByTestId("pwa-install-banner");
+    expect(banner).toBeInTheDocument();
   });
 });
