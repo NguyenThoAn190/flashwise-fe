@@ -11,6 +11,12 @@ export function InstallAppBanner() {
 
   if (!visible) return null;
 
+  // iOS / iPadOS: Safari không hỗ trợ beforeinstallprompt nên phải hướng dẫn
+  // thủ công bằng Share → Add to Home Screen.
+  const isAppleMobile = platform === "ios" || platform === "ipad";
+  const hintKey = platform === "ipad" ? "ipadHint" : "iosHint";
+  const stepsKey = platform === "ipad" ? "ipadSteps" : "iosSteps";
+
   return (
     <div
       role="dialog"
@@ -25,13 +31,13 @@ export function InstallAppBanner() {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-bold text-quizlet-slate">{t("title")}</p>
         <p className="text-xs text-quizlet-slate-secondary leading-relaxed">
-          {platform === "ios" ? t("iosHint") : t("desc")}
+          {isAppleMobile ? t(hintKey) : t("desc")}
         </p>
 
-        {platform === "ios" ? (
+        {isAppleMobile ? (
           <p className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-quizlet-indigo">
             <Share className="w-3.5 h-3.5" aria-hidden="true" />
-            {t("iosSteps")}
+            {t(stepsKey)}
           </p>
         ) : (
           <button

@@ -155,36 +155,59 @@ export function usePWAInstall() {
   // Khởi tạo từ cache để hứng event đã bắn trước khi mount.
   const [prompt, setPrompt] = useState<BeforeInstallPromptEvent | null>(() => cachedPrompt);
   const [visible, setVisible] = useState(false);
-  const [platform, setPlatform] = useState<"android" | "ios" | "other">("other");
+  const [platform, setPlatform] = useState<"android" | "ios" | "ipad" | "other">("other");
 
-  const recompute = useCallback((p: BeforeInstallPromptEvent | null = cachedPrompt) => {
-    if (isStandalone() || shouldSuppressByDismiss()) {
-      setVisible(false);
-      return;
-    }
-    // Chỉ hiện từ lượt visit thứ 2 để tránh làm phiền lần đầu.
-    let visits = 2;
-    try {
-      visits = Number(localStorage.getItem(VISIT_KEY) || "0");
-    } catch {
-      // Không đọc được storage thì vẫn cho hiện để không kẹt ẩn vĩnh viễn.
-    }
-    if (visits < 2) {
-      setVisible(false);
-      return;
-    }
-    // Chỉ hiện trên mobile viewport (đồng bộ với class `md:hidden` của banner).
-    if (!isMobileViewport()) {
-      setVisible(false);
-      return;
-    }
+  // Prompt có thể đã bị inline <head> script capture trước khi module này
+  // eval — luôn ưu tiên global capture nếu có.
+  const currentPrompt = useCallback(
+    (fallback?: BeforeInstallPromptEvent | null) =>
+      readGlobalPrompt() ?? cachedPrompt ?? fallback ?? null,
+    [],
+  );
 
-    setPlatform(isIos() ? "ios" : "android");
+  const recompute = useCallback(
+    (p?: BeforeInstallPromptEvent | null) => {
+      const effective = currentPrompt(p);
+      if (isStandalone() || shouldSuppressByDismiss()) {
+        setVisible(false);
+        return;
+      }
+      // Chỉ hiện từ lượt visit thứ 2 để tránh làm phiền lần đầu.
+      let visits = 2;
+      try {
+        visits = Number(localStorage.getItem(VISIT_KEY) || "0");
+      } catch {
+        // Không đọc được storage thì vẫn cho hiện để không kẹt ẩn vĩnh viễn.
+      }
+      if (visits < 2) {
+        setVisible(false);
+        return;
+      }
+      // Chỉ hiện trên mobile viewport (đồng bộ với class `md:hidden` của banner).
+      if (!isMobileViewport()) {
+        setVisible(false);
+        return;
+      }
 
-    // iOS không có beforeinstallprompt: hiện hướng dẫn thủ công.
-    // Android/Desktop Chromium: cần prompt đã cache mới hiện nút Install.
-    setVisible(isIos() ? true : p !== null);
-  }, []);
+      // Platform quyết định cách hướng dẫn cài:
+      // - ios (iPhone/iPod): Share → Add to Home Screen
+      // - ipad: cũng dùng Share của Safari, nhưng iPadOS đôi khi không có
+      //   Share sheet khi mở bằng app khác → nhắc mở bằng Safari.
+      // - android: dùng beforeinstallprompt nếu có.
+      if (isIpad()) {
+        setPlatform("ipad");
+      } else if (isIos()) {
+        setPlatform("ios");
+      } else {
+        setPlatform("android");
+      }
+
+      // iOS/iPadOS không có beforeinstallprompt: hiện hướng dẫn thủ công.
+      // Android/Desktop Chromium: cần prompt đã cache mới hiện nút Install.
+      setVisible(isIos() ? true : effective !== null);
+    },
+    [currentPrompt],
+  );
 
   useEffect(() => {
     bumpVisitOncePerSession();
@@ -214,7 +237,7 @@ export function usePWAInstall() {
     };
     window.addEventListener("storage", onStorage);
 
-    setPrompt(cachedPrompt);
+    setPrompt(currentPrompt());
     recompute();
 
     return () => {
@@ -227,7 +250,7 @@ export function usePWAInstall() {
       }
       window.removeEventListener("storage", onStorage);
     };
-  }, [recompute]);
+  }, [recompute, currentPrompt]);
 
   const dismiss = useCallback(() => {
     try {
@@ -239,19 +262,20 @@ export function usePWAInstall() {
   }, []);
 
   const install = useCallback(async () => {
-    const p = cachedPrompt ?? prompt;
+    const p = currentPrompt(prompt);
     if (p) {
       await p.prompt();
       const choice = await p.userChoice;
       if (choice.outcome === "accepted") {
         cachedPrompt = null;
+        delete (window as PwaGlobal).__fwBeforeInstallPrompt;
         setPrompt(null);
         setVisible(false);
       }
       return choice.outcome;
     }
     return "dismissed" as const;
-  }, [prompt]);
+  }, [prompt, currentPrompt]);
 
-  return { visible, platform, canPrompt: prompt !== null, install, dismiss };
+  return { visible, platform, canPrompt: currentPrompt(prompt) !== null, install, dismiss };
 }

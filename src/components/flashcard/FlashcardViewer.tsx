@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { Volume2, Lightbulb, Star, Keyboard } from "lucide-react";
 import { Flashcard } from "@/types/studySet";
 import { CardToolbar, FlashcardStudyDirection } from "./CardToolbar";
@@ -70,6 +71,7 @@ export function FlashcardViewer({
   onToggleStarCard,
   className = "",
 }: FlashcardViewerProps) {
+  const t = useTranslations("flashcard");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [direction, setDirection] =
@@ -272,7 +274,7 @@ export function FlashcardViewer({
         className="w-full rounded-2xl bg-quizlet-surface border border-quizlet-border-light p-12 text-center shadow-card"
       >
         <p className="text-base font-semibold text-quizlet-slate-secondary">
-          No flashcards in this study set yet. Add a card below to start studying!
+          {t("empty")}
         </p>
       </div>
     );
@@ -285,8 +287,8 @@ export function FlashcardViewer({
 
   const frontText = direction === "term_first" ? rawFront : rawBack;
   const backText = direction === "term_first" ? rawBack : rawFront;
-  const frontLabel = direction === "term_first" ? "Term" : "Definition";
-  const backLabel = direction === "term_first" ? "Definition" : "Term";
+  const frontLabel = direction === "term_first" ? t("term") : t("definition");
+  const backLabel = direction === "term_first" ? t("definition") : t("term");
 
   const isCardStarred = starredCardIds
     ? starredCardIds.has(currentCard.id)
@@ -325,11 +327,11 @@ export function FlashcardViewer({
           onClick={handleFlip}
           role="button"
           tabIndex={0}
-          aria-label={`Flashcard ${currentIndex + 1} of ${
-            orderedCards.length
-          }. Currently showing ${
-            isFlipped ? backLabel : frontLabel
-          }. Click or press Spacebar to flip.`}
+          aria-label={t("cardAria", {
+            current: currentIndex + 1,
+            total: orderedCards.length,
+            side: isFlipped ? backLabel : frontLabel,
+          })}
           className={`perspective-1000 w-full ${
             isFullscreen ? "h-[28rem] sm:h-[34rem]" : "h-80 sm:h-[24rem]"
           } cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-quizlet-indigo rounded-2xl`}
@@ -363,7 +365,7 @@ export function FlashcardViewer({
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-quizlet-canvas text-quizlet-slate-secondary hover:text-quizlet-indigo transition-colors cursor-pointer"
                     >
                       <Lightbulb className="w-3.5 h-3.5 text-quizlet-gold" />
-                      <span>{showHint ? currentCard.hint : "Get a hint"}</span>
+                      <span>{showHint ? currentCard.hint : t("getHint")}</span>
                     </button>
                   )}
                 </div>
@@ -376,7 +378,7 @@ export function FlashcardViewer({
                       e.stopPropagation();
                       speakText(frontText);
                     }}
-                    aria-label={`Listen to ${frontLabel}`}
+                    aria-label={t("listenTo", { side: frontLabel })}
                     className="p-2 rounded-full text-quizlet-slate-secondary hover:bg-quizlet-canvas hover:text-quizlet-indigo transition-colors cursor-pointer"
                   >
                     <Volume2 className="w-5 h-5" />
@@ -386,7 +388,7 @@ export function FlashcardViewer({
                     type="button"
                     data-testid="star-card-btn"
                     onClick={handleStarCard}
-                    aria-label={isCardStarred ? "Unstar card" : "Star card"}
+                    aria-label={isCardStarred ? t("unstarCard") : t("starCard")}
                     aria-pressed={isCardStarred}
                     className="p-2 rounded-full text-quizlet-slate-secondary hover:bg-quizlet-canvas hover:text-quizlet-gold transition-colors cursor-pointer"
                   >
@@ -414,7 +416,7 @@ export function FlashcardViewer({
               {/* Bottom Flip Prompt */}
               <div className="text-center">
                 <span className="text-xs font-semibold text-quizlet-slate-muted">
-                  Click card or press Spacebar to flip
+                  {t("flipToBack")}
                 </span>
               </div>
             </div>
@@ -438,7 +440,7 @@ export function FlashcardViewer({
                       e.stopPropagation();
                       speakText(backText);
                     }}
-                    aria-label={`Listen to ${backLabel}`}
+                    aria-label={t("listenTo", { side: backLabel })}
                     className="p-2 rounded-full text-quizlet-slate-secondary hover:bg-quizlet-canvas hover:text-quizlet-indigo transition-colors cursor-pointer"
                   >
                     <Volume2 className="w-5 h-5" />
@@ -447,7 +449,7 @@ export function FlashcardViewer({
                   <button
                     type="button"
                     onClick={handleStarCard}
-                    aria-label={isCardStarred ? "Unstar card" : "Star card"}
+                    aria-label={isCardStarred ? t("unstarCard") : t("starCard")}
                     className="p-2 rounded-full text-quizlet-slate-secondary hover:bg-quizlet-canvas hover:text-quizlet-gold transition-colors cursor-pointer"
                   >
                     <Star
@@ -483,7 +485,7 @@ export function FlashcardViewer({
               {/* Bottom Flip Prompt */}
               <div className="text-center">
                 <span className="text-xs font-semibold text-quizlet-slate-muted">
-                  Click card or press Spacebar to flip back
+                  {t("flipToFront")}
                 </span>
               </div>
             </div>
@@ -514,37 +516,37 @@ export function FlashcardViewer({
         <div className="hidden sm:flex items-center justify-center gap-6 text-xs font-medium text-quizlet-slate-muted pt-1">
           <span className="inline-flex items-center gap-1.5">
             <Keyboard className="w-3.5 h-3.5" />
-            <span>Shortcuts:</span>
+            <span>{t("shortcuts")}</span>
           </span>
           <span>
             <kbd className="px-1.5 py-0.5 rounded bg-quizlet-surface border border-quizlet-border text-quizlet-slate font-semibold">
               Space
             </kbd>{" "}
-            Flip
+            {t("flip")}
           </span>
           <span>
             <kbd className="px-1.5 py-0.5 rounded bg-quizlet-surface border border-quizlet-border text-quizlet-slate font-semibold">
               ← / →
             </kbd>{" "}
-            Navigate
+            {t("navigate")}
           </span>
           <span>
             <kbd className="px-1.5 py-0.5 rounded bg-quizlet-surface border border-quizlet-border text-quizlet-slate font-semibold">
               S
             </kbd>{" "}
-            Shuffle
+            {t("shuffle")}
           </span>
           <span>
             <kbd className="px-1.5 py-0.5 rounded bg-quizlet-surface border border-quizlet-border text-quizlet-slate font-semibold">
               A
             </kbd>{" "}
-            Tự đọc
+            {t("autoRead")}
           </span>
           <span>
             <kbd className="px-1.5 py-0.5 rounded bg-quizlet-surface border border-quizlet-border text-quizlet-slate font-semibold">
               F
             </kbd>{" "}
-            Fullscreen
+            {t("fullscreen")}
           </span>
         </div>
       </div>

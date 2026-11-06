@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import {
   Shuffle,
   Play,
@@ -53,6 +54,7 @@ export function CardToolbar({
   onToggleFullscreen,
   onToggleDirection,
 }: CardToolbarProps) {
+  const t = useTranslations("flashcard");
   const safeTotal = Math.max(totalCards, 1);
   const progressPercent =
     totalCards > 0 ? Math.round(((currentIndex + 1) / safeTotal) * 100) : 0;
@@ -77,8 +79,8 @@ export function CardToolbar({
             data-testid="toolbar-autoplay-btn"
             onClick={onToggleAutoPlay}
             aria-pressed={isAutoPlaying}
-            aria-label={isAutoPlaying ? "Pause autoplay" : "Start autoplay"}
-            title="Autoplay (P)"
+            aria-label={isAutoPlaying ? t("pauseAutoplay") : t("startAutoplay")}
+            title={t("autoplay")}
             className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold border transition-colors cursor-pointer ${
               isAutoPlaying
                 ? "bg-quizlet-indigo-light border-quizlet-indigo text-quizlet-indigo"
@@ -91,7 +93,7 @@ export function CardToolbar({
               <Play className="w-4 h-4" />
             )}
             <span className="hidden sm:inline">
-              {isAutoPlaying ? "Playing" : "Play"}
+              {isAutoPlaying ? t("playing") : t("play")}
             </span>
           </button>
 
@@ -100,8 +102,8 @@ export function CardToolbar({
             data-testid="toolbar-shuffle-btn"
             onClick={onToggleShuffle}
             aria-pressed={isShuffled}
-            aria-label={isShuffled ? "Disable shuffle" : "Enable shuffle"}
-            title="Shuffle cards (S)"
+            aria-label={isShuffled ? t("disableShuffle") : t("enableShuffle")}
+            title={t("shuffleTitle")}
             className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold border transition-colors cursor-pointer ${
               isShuffled
                 ? "bg-quizlet-indigo-light border-quizlet-indigo text-quizlet-indigo"
@@ -109,7 +111,7 @@ export function CardToolbar({
             }`}
           >
             <Shuffle className="w-4 h-4" />
-            <span className="hidden sm:inline">Shuffle</span>
+            <span className="hidden sm:inline">{t("shuffle")}</span>
           </button>
 
           <button
@@ -117,8 +119,8 @@ export function CardToolbar({
             data-testid="toolbar-autoread-btn"
             onClick={onToggleAutoRead}
             aria-pressed={isAutoRead}
-            aria-label={isAutoRead ? "Tắt tự động đọc" : "Bật tự động đọc"}
-            title="Tự động đọc mặt thẻ (A)"
+            aria-label={isAutoRead ? t("disableAutoRead") : t("enableAutoRead")}
+            title={t("autoReadTitle")}
             className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold border transition-colors cursor-pointer ${
               isAutoRead
                 ? "bg-quizlet-indigo-light border-quizlet-indigo text-quizlet-indigo"
@@ -126,7 +128,7 @@ export function CardToolbar({
             }`}
           >
             <Volume2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Tự đọc</span>
+            <span className="hidden sm:inline">{t("autoRead")}</span>
           </button>
         </div>
 
@@ -137,7 +139,7 @@ export function CardToolbar({
             data-testid="prev-card-btn"
             onClick={onPrev}
             disabled={currentIndex <= 0 || totalCards === 0}
-            aria-label="Previous card"
+            aria-label={t("prevCard")}
             className="w-11 h-11 rounded-full border-2 border-quizlet-border bg-quizlet-surface flex items-center justify-center text-quizlet-slate hover:border-quizlet-indigo hover:text-quizlet-indigo disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -155,7 +157,7 @@ export function CardToolbar({
             data-testid="next-card-btn"
             onClick={onNext}
             disabled={currentIndex >= totalCards - 1 || totalCards === 0}
-            aria-label="Next card"
+            aria-label={t("nextCard")}
             className="w-11 h-11 rounded-full border-2 border-quizlet-border bg-quizlet-surface flex items-center justify-center text-quizlet-slate hover:border-quizlet-indigo hover:text-quizlet-indigo disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
           >
             <ChevronRight className="w-5 h-5" />
@@ -166,11 +168,11 @@ export function CardToolbar({
             data-testid="flip-btn"
             onClick={onFlip}
             disabled={totalCards === 0}
-            aria-label="Flip card"
+            aria-label={t("flipCard")}
             className="hidden md:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-quizlet-indigo text-quizlet-surface hover:bg-quizlet-indigo-hover disabled:opacity-40 transition-colors cursor-pointer"
           >
             <RotateCw className="w-3.5 h-3.5" />
-            <span>{isFlipped ? "Show Term" : "Show Definition"}</span>
+            <span>{isFlipped ? t("showTerm") : t("showDefinition")}</span>
           </button>
         </div>
 
@@ -180,13 +182,13 @@ export function CardToolbar({
             type="button"
             data-testid="toggle-direction"
             onClick={onToggleDirection}
-            aria-label="Toggle study direction"
-            title="Switch Front/Back Direction"
+            aria-label={t("toggleDirection")}
+            title={t("directionTitle")}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold border border-quizlet-border bg-quizlet-surface text-quizlet-slate-secondary hover:bg-quizlet-surface-hover hover:text-quizlet-slate transition-colors cursor-pointer"
           >
             <ArrowLeftRight className="w-4 h-4" />
             <span>
-              {direction === "term_first" ? "Term first" : "Definition first"}
+              {direction === "term_first" ? t("termFirst") : t("defFirst")}
             </span>
           </button>
 
@@ -195,8 +197,8 @@ export function CardToolbar({
             data-testid="toolbar-fullscreen-btn"
             onClick={onToggleFullscreen}
             aria-pressed={isFullscreen}
-            aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-            title="Fullscreen (F)"
+            aria-label={isFullscreen ? t("exitFullscreen") : t("enterFullscreen")}
+            title={t("fullscreenTitle")}
             className={`p-2 rounded-full border transition-colors cursor-pointer ${
               isFullscreen
                 ? "bg-quizlet-indigo-light border-quizlet-indigo text-quizlet-indigo"

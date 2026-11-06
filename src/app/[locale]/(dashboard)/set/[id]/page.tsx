@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import Link from "next/link";
 import {
@@ -34,6 +35,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Dialog } from "@/components/ui/Dialog";
 
 export default function StudySetDetailPage() {
+  const t = useTranslations("setDetail");
+  const tCommon = useTranslations("common");
   const params = useParams();
   const router = useRouter();
   const setId = typeof params?.id === "string" ? params.id : "";
@@ -57,11 +60,11 @@ export default function StudySetDetailPage() {
       const detail = await apiGetStudySet(setId);
       setStudySet(detail);
     } catch (err: any) {
-      setError(err?.message || "Could not load study set.");
+      setError(err?.message || t("loadError"));
     } finally {
       setIsLoading(false);
     }
-  }, [setId]);
+  }, [setId, t]);
 
   useEffect(() => {
     fetchSet();
@@ -85,7 +88,7 @@ export default function StudySetDetailPage() {
       const duplicated = await apiDuplicateStudySet(studySet.id);
       router.push(`/set/${duplicated.id}`);
     } catch (err: any) {
-      setError(err?.message || "Failed to duplicate study set.");
+      setError(err?.message || t("duplicateError"));
     } finally {
       setIsDuplicating(false);
     }
@@ -99,7 +102,7 @@ export default function StudySetDetailPage() {
       setIsDeleteModalOpen(false);
       router.push("/");
     } catch (err: any) {
-      setError(err?.message || "Failed to delete study set.");
+      setError(err?.message || t("deleteError"));
       setIsDeleting(false);
     }
   };
@@ -195,17 +198,17 @@ export default function StudySetDetailPage() {
         >
           <div className="bg-quizlet-surface rounded-2xl border border-quizlet-border-light p-8 shadow-card space-y-4">
             <h1 className="text-2xl font-bold text-quizlet-slate">
-              Study Set Not Found
+              {t("notFound")}
             </h1>
             <p className="text-sm text-quizlet-slate-secondary">
-              {error || "The requested study set does not exist or could not be loaded."}
+              {error || t("notFoundDesc")}
             </p>
             <div className="flex justify-center gap-3 pt-2">
               <Button variant="secondary" onClick={() => router.push("/")}>
-                Back to Home
+                {tCommon("backToHome")}
               </Button>
               <Button variant="primary" onClick={fetchSet}>
-                Retry
+                {tCommon("retry")}
               </Button>
             </div>
           </div>
@@ -215,7 +218,7 @@ export default function StudySetDetailPage() {
   }
 
   const creatorName =
-    studySet.creator?.name || studySet.creator_name || "Demo Student";
+    studySet.creator?.name || studySet.creator_name || t("demoCreator");
   const creatorInitial = creatorName[0]?.toUpperCase() || "U";
 
   return (
@@ -231,7 +234,7 @@ export default function StudySetDetailPage() {
           className="inline-flex items-center gap-2 text-sm font-bold text-quizlet-slate-secondary hover:text-quizlet-indigo transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Library</span>
+          <span>{tCommon("backToLibrary")}</span>
         </Link>
 
         <div className="flex items-center gap-2">
@@ -244,12 +247,12 @@ export default function StudySetDetailPage() {
             {studySet.visibility === "private" ? (
               <>
                 <Lock className="w-3 h-3" />
-                <span>Private</span>
+                <span>{t("private")}</span>
               </>
             ) : (
               <>
                 <Globe className="w-3 h-3" />
-                <span>Public</span>
+                <span>{t("public")}</span>
               </>
             )}
           </Badge>
@@ -270,9 +273,7 @@ export default function StudySetDetailPage() {
               type="button"
               data-testid="star-set-btn"
               onClick={handleToggleSetStar}
-              aria-label={
-                studySet.is_starred ? "Unstar study set" : "Star study set"
-              }
+              aria-label={studySet.is_starred ? t("unstarSet") : t("starSet")}
               className="p-2 rounded-full border border-quizlet-border bg-quizlet-surface hover:bg-quizlet-surface-hover transition-colors cursor-pointer"
             >
               <Star
@@ -303,7 +304,7 @@ export default function StudySetDetailPage() {
             onClick={() => router.push(`/set/${studySet.id}/edit`)}
             leftIcon={<Edit3 className="w-4 h-4" />}
           >
-            Edit
+            {t("edit")}
           </Button>
 
           <Button
@@ -314,7 +315,7 @@ export default function StudySetDetailPage() {
             onClick={handleDuplicate}
             leftIcon={<Copy className="w-4 h-4" />}
           >
-            Duplicate
+            {t("duplicate")}
           </Button>
 
           <Button
@@ -330,7 +331,7 @@ export default function StudySetDetailPage() {
               )
             }
           >
-            {copiedLink ? "Copied!" : "Share"}
+            {copiedLink ? t("copied") : t("share")}
           </Button>
 
           <Button
@@ -340,7 +341,7 @@ export default function StudySetDetailPage() {
             onClick={() => setIsDeleteModalOpen(true)}
             leftIcon={<Trash2 className="w-4 h-4" />}
           >
-            Delete
+            {t("delete")}
           </Button>
         </div>
       </div>
@@ -352,8 +353,8 @@ export default function StudySetDetailPage() {
             <Layers className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-sm font-bold text-quizlet-slate">Flashcards</p>
-            <p className="text-xs text-quizlet-slate-muted">3D Flip Mode</p>
+            <p className="text-sm font-bold text-quizlet-slate">{t("flashcards")}</p>
+            <p className="text-xs text-quizlet-slate-muted">{t("flashcardsDesc")}</p>
           </div>
         </div>
 
@@ -366,8 +367,8 @@ export default function StudySetDetailPage() {
             <Brain className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-sm font-bold text-quizlet-slate">Learn</p>
-            <p className="text-xs text-quizlet-slate-muted">Adaptive Engine</p>
+            <p className="text-sm font-bold text-quizlet-slate">{t("learn")}</p>
+            <p className="text-xs text-quizlet-slate-muted">{t("learnDesc")}</p>
           </div>
         </Link>
 
@@ -379,9 +380,9 @@ export default function StudySetDetailPage() {
             <Edit3 className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-sm font-bold text-quizlet-slate">Edit Cards</p>
+            <p className="text-sm font-bold text-quizlet-slate">{t("editCards")}</p>
             <p className="text-xs text-quizlet-slate-muted">
-              Manage & Import
+              {t("editCardsDesc")}
             </p>
           </div>
         </Link>
@@ -395,8 +396,8 @@ export default function StudySetDetailPage() {
             <BarChart3 className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-sm font-bold text-quizlet-slate">Progress</p>
-            <p className="text-xs text-quizlet-slate-muted">Mastery & SRS</p>
+            <p className="text-sm font-bold text-quizlet-slate">{t("progress")}</p>
+            <p className="text-xs text-quizlet-slate-muted">{t("progressDesc")}</p>
           </div>
         </Link>
       </div>
@@ -416,7 +417,7 @@ export default function StudySetDetailPage() {
           </div>
           <div>
             <p className="text-xs text-quizlet-slate-muted font-medium">
-              Created by
+              {t("createdBy")}
             </p>
             <p
               data-testid="set-creator-name"
@@ -429,7 +430,7 @@ export default function StudySetDetailPage() {
 
         <Link href={`/set/${studySet.id}/learn`}>
           <Button variant="primary" size="md" leftIcon={<Brain className="w-4 h-4" />}>
-            Study with Learn Mode
+            {t("studyWithLearn")}
           </Button>
         </Link>
       </div>
@@ -448,15 +449,18 @@ export default function StudySetDetailPage() {
       <Dialog
         open={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        title="Delete this study set?"
-        description={`Are you sure you want to permanently delete "${studySet.title}" and all ${studySet.cards.length} flashcards? This action cannot be undone.`}
+        title={t("deleteTitle")}
+        description={t("deleteDesc", {
+          title: studySet.title,
+          count: studySet.cards.length,
+        })}
         footer={
           <>
             <Button
               variant="secondary"
               onClick={() => setIsDeleteModalOpen(false)}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               variant="danger"
@@ -464,13 +468,13 @@ export default function StudySetDetailPage() {
               isLoading={isDeleting}
               onClick={handleConfirmDelete}
             >
-              Yes, delete set
+              {t("deleteConfirm")}
             </Button>
           </>
         }
       >
         <p className="text-sm text-quizlet-slate-secondary">
-          All study progress and spaced repetition schedules for this set will also be removed.
+          {t("deleteNote")}
         </p>
       </Dialog>
       </div>

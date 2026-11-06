@@ -43,6 +43,15 @@ export interface SessionSummaryData {
   mastered_count: number;
 }
 
+export interface ChunkCardState {
+  flashcard_id: string;
+  mastery_score: number;
+  /** Enum KnowledgeState từ BE: 1=NEW 2=LEARNING 3=FAMILIAR 4=REVIEWING 5=MASTERED */
+  state?: number;
+  failed_in_session?: boolean;
+  answered_correct?: boolean;
+}
+
 export interface AdaptiveQuestion {
   question_id: string;
   session_id: string;
@@ -64,6 +73,14 @@ export interface AdaptiveQuestion {
   chunk_size?: number;
   is_review_card?: boolean;
   chunk_gate_passed?: boolean;
+  /** true khi đang học lại thẻ đã trả sai trong phiên này. */
+  failed_retry?: boolean;
+  /** Trạng thái từng thẻ trong cụm hiện tại để tô màu tiến độ chính xác. */
+  chunk_cards?: ChunkCardState[];
+  /** Tiến độ kiến thức toàn bộ set (0-100), đo theo trạng thái đã học. */
+  knowledge_progress?: number;
+  /** Số thẻ đã đạt yêu cầu trong cụm hiện tại. */
+  chunk_mastered_count?: number;
 }
 
 export interface CompletedSessionNextResponse {
@@ -255,6 +272,44 @@ export async function apiGetNextQuestion(
     chunk_size: typeof q.chunk_size === "number" ? q.chunk_size : undefined,
     is_review_card: Boolean(q.is_review_card ?? q.isReviewCard ?? false),
     chunk_gate_passed: Boolean(q.chunk_gate_passed ?? q.chunkGatePassed ?? false),
+    failed_retry: Boolean(q.failed_retry ?? q.failedRetry ?? false),
+    knowledge_progress:
+      typeof q.knowledge_progress === "number"
+        ? q.knowledge_progress
+        : typeof q.knowledgeProgress === "number"
+        ? q.knowledgeProgress
+        : undefined,
+    chunk_mastered_count:
+      typeof q.chunk_mastered_count === "number"
+        ? q.chunk_mastered_count
+        : typeof q.chunkMasteredCount === "number"
+        ? q.chunkMasteredCount
+        : undefined,
+    chunk_cards: Array.isArray(q.chunk_cards)
+      ? q.chunk_cards.map((c: any) => ({
+          flashcard_id: String(c.flashcard_id || c.flashcardId || ""),
+          mastery_score: Number(c.mastery_score ?? c.masteryScore ?? 0),
+          state: typeof c.state === "number" ? c.state : undefined,
+          failed_in_session: Boolean(
+            c.failed_in_session ?? c.failedInSession ?? false
+          ),
+          answered_correct: Boolean(
+            c.answered_correct ?? c.answeredCorrect ?? false
+          ),
+        }))
+      : Array.isArray(q.chunkCards)
+      ? q.chunkCards.map((c: any) => ({
+          flashcard_id: String(c.flashcard_id || c.flashcardId || ""),
+          mastery_score: Number(c.mastery_score ?? c.masteryScore ?? 0),
+          state: typeof c.state === "number" ? c.state : undefined,
+          failed_in_session: Boolean(
+            c.failed_in_session ?? c.failedInSession ?? false
+          ),
+          answered_correct: Boolean(
+            c.answered_correct ?? c.answeredCorrect ?? false
+          ),
+        }))
+      : undefined,
   };
 }
 

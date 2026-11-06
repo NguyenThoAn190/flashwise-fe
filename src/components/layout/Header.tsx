@@ -73,7 +73,7 @@ export function Header({ onSearch, className }: HeaderProps) {
     <>
       <header
         role="banner"
-        className={`sticky top-0 z-40 w-full bg-white border-b border-quizlet-border-light shadow-xs font-sans antialiased pt-[env(safe-area-inset-top)] ${
+        className={`sticky top-0 z-40 w-full bg-white border-b border-quizlet-border-light shadow-xs font-sans antialiased pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] ${
           className || ""
         }`}
       >

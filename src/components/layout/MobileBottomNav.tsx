@@ -43,7 +43,7 @@ export function MobileBottomNav() {
     <nav
       aria-label={t("bottomBarAria")}
       data-testid="mobile-bottom-nav"
-      className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-quizlet-border-light shadow-[0_-4px_16px_rgba(0,0,0,0.06)] pb-[env(safe-area-inset-bottom)]"
+      className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-quizlet-border-light shadow-[0_-4px_16px_rgba(0,0,0,0.06)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]"
     >
       <div className="flex items-stretch px-1 pt-1">
         <Link

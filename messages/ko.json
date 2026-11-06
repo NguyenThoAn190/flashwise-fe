@@ -27,7 +27,9 @@
       "install": "설치",
       "dismiss": "설치 안내 닫기",
       "iosHint": "iPhone에 설치: Safari로 열어 홈 화면에 추가하세요.",
-      "iosSteps": "공유 → 홈 화면에 추가 탭"
+      "iosSteps": "공유 → 홈 화면에 추가 탭",
+      "ipadHint": "iPad에 설치: Safari로 열어 홈 화면에 추가하세요.",
+      "ipadSteps": "공유 → 홈 화면에 추가"
     }
   },
   "nav": {
@@ -297,6 +299,10 @@
     "enterFullscreen": "전체화면 진입",
     "exitFullscreen": "전체화면 종료",
     "fullscreenTitle": "전체화면 (F)",
+    "autoRead": "자동 읽기",
+    "enableAutoRead": "자동 읽기 켜기",
+    "disableAutoRead": "자동 읽기 끄기",
+    "autoReadTitle": "카드 앞면 자동 읽기 (A)",
     "counter": "{current} / {total}",
     "termsInSet": "세트 내 용어({count})",
     "filterAll": "전체({count})",

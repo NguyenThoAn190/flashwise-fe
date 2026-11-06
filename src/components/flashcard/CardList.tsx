@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Volume2, Trash2, Plus, Star } from "lucide-react";
 import { Flashcard, CreateCardInput, KnowledgeState } from "@/types/studySet";
 import { Badge } from "@/components/ui/Badge";
@@ -19,20 +20,20 @@ export interface CardListProps {
 
 type StateFilter = "all" | "learning" | "mastered" | "not_studied";
 
-function getStateBadgeConfig(state?: KnowledgeState): {
-  label: string;
+function getStateBadgeStatus(state?: KnowledgeState): {
+  key: "mastered" | "reviewing" | "stillLearning" | "notStudied";
   status: "MASTERED" | "LEARNING" | "FAMILIAR" | "DEFAULT";
 } {
   switch (state) {
     case "mastered":
-      return { label: "Mastered", status: "MASTERED" };
+      return { key: "mastered", status: "MASTERED" };
     case "reviewing":
     case "familiar":
-      return { label: "Reviewing", status: "FAMILIAR" };
+      return { key: "reviewing", status: "FAMILIAR" };
     case "learning":
-      return { label: "Still learning", status: "LEARNING" };
+      return { key: "stillLearning", status: "LEARNING" };
     default:
-      return { label: "Not studied", status: "DEFAULT" };
+      return { key: "notStudied", status: "DEFAULT" };
   }
 }
 
@@ -44,6 +45,7 @@ export function CardList({
   onToggleStarCard,
   isSubmittingCard = false,
 }: CardListProps) {
+  const t = useTranslations("flashcard");
   const [filter, setFilter] = useState<StateFilter>("all");
   const [frontContent, setFrontContent] = useState("");
   const [backContent, setBackContent] = useState("");
@@ -81,7 +83,7 @@ export function CardList({
     const trimmedBack = backContent.trim();
 
     if (!trimmedFront || !trimmedBack) {
-      setFormError("Both Term and Definition are required.");
+      setFormError(t("bothRequired"));
       return;
     }
 
@@ -97,7 +99,7 @@ export function CardList({
       setBackContent("");
       setHintContent("");
     } catch (err: any) {
-      setFormError(err?.message || "Failed to add flashcard.");
+      setFormError(err?.message || t("addFailed"));
     }
   };
 
@@ -114,13 +116,13 @@ export function CardList({
   return (
     <section
       data-testid="terms-list-section"
-      aria-label="Terms in this set"
+      aria-label={t("termsInSet", { count: cards.length })}
       className="space-y-6"
     >
       {/* Header & Filter Pills */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h2 className="text-xl font-bold text-quizlet-slate">
-          Terms in this set ({cards.length})
+          {t("termsInSet", { count: cards.length })}
         </h2>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -133,7 +135,7 @@ export function CardList({
                 : "bg-quizlet-surface border border-quizlet-border text-quizlet-slate-secondary hover:bg-quizlet-surface-hover"
             }`}
           >
-            All ({cards.length})
+            {t("filterAll", { count: cards.length })}
           </button>
           <button
             type="button"
@@ -144,7 +146,7 @@ export function CardList({
                 : "bg-quizlet-surface border border-quizlet-border text-quizlet-slate-secondary hover:bg-quizlet-surface-hover"
             }`}
           >
-            Still learning ({learningCount})
+            {t("filterLearning", { count: learningCount })}
           </button>
           <button
             type="button"
@@ -155,7 +157,7 @@ export function CardList({
                 : "bg-quizlet-surface border border-quizlet-border text-quizlet-slate-secondary hover:bg-quizlet-surface-hover"
             }`}
           >
-            Mastered ({masteredCount})
+            {t("filterMastered", { count: masteredCount })}
           </button>
           <button
             type="button"
@@ -166,7 +168,7 @@ export function CardList({
                 : "bg-quizlet-surface border border-quizlet-border text-quizlet-slate-secondary hover:bg-quizlet-surface-hover"
             }`}
           >
-            Not studied ({notStudiedCount})
+            {t("filterNotStudied", { count: notStudiedCount })}
           </button>
         </div>
       </div>
@@ -176,7 +178,7 @@ export function CardList({
         {filteredCards.map((card, index) => {
           const front = card.front_content || card.front_text || "";
           const back = card.back_content || card.back_text || "";
-          const badgeInfo = getStateBadgeConfig(card.state);
+          const badgeInfo = getStateBadgeStatus(card.state);
           const isStarred = starredCardIds?.has(card.id) ?? false;
 
           return (
@@ -193,7 +195,7 @@ export function CardList({
                       #{index + 1}
                     </span>
                     <Badge size="sm" status={badgeInfo.status}>
-                      {badgeInfo.label}
+                      {t(badgeInfo.key)}
                     </Badge>
                   </div>
                   <p
@@ -213,7 +215,7 @@ export function CardList({
                   </p>
                   {card.hint && (
                     <p className="text-xs text-quizlet-slate-muted mt-1 italic">
-                      Hint: {card.hint}
+                      {t("hintPrefix", { hint: card.hint })}
                     </p>
                   )}
                 </div>
@@ -225,7 +227,7 @@ export function CardList({
                   <button
                     type="button"
                     onClick={() => onToggleStarCard(card.id)}
-                    aria-label={isStarred ? "Unstar term" : "Star term"}
+                    aria-label={isStarred ? t("unstarTerm") : t("starTerm")}
                     className="p-2 rounded-full text-quizlet-slate-secondary hover:bg-quizlet-canvas hover:text-quizlet-gold transition-colors cursor-pointer"
                   >
                     <Star
@@ -241,7 +243,7 @@ export function CardList({
                 <button
                   type="button"
                   onClick={() => speakText(`${front}. ${back}`)}
-                  aria-label={`Pronounce ${front}`}
+                  aria-label={t("pronounce", { term: front })}
                   className="p-2 rounded-full text-quizlet-slate-secondary hover:bg-quizlet-canvas hover:text-quizlet-indigo transition-colors cursor-pointer"
                 >
                   <Volume2 className="w-4 h-4" />
@@ -253,7 +255,7 @@ export function CardList({
                     data-testid="delete-card-btn"
                     disabled={deletingId === card.id}
                     onClick={() => handleDelete(card.id)}
-                    aria-label={`Delete card ${front}`}
+                    aria-label={t("deleteCardAria", { term: front })}
                     className="p-2 rounded-full text-quizlet-slate-secondary hover:bg-quizlet-coral-bg hover:text-quizlet-coral disabled:opacity-50 transition-colors cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -267,7 +269,7 @@ export function CardList({
         {filteredCards.length === 0 && (
           <div className="bg-quizlet-surface rounded-quizlet-card border border-quizlet-border-light p-8 text-center">
             <p className="text-sm font-medium text-quizlet-slate-secondary">
-              No flashcards match the selected filter.
+              {t("noMatchFilter")}
             </p>
           </div>
         )}
@@ -283,7 +285,7 @@ export function CardList({
           <div className="flex items-center justify-between">
             <h3 className="text-base font-bold text-quizlet-slate flex items-center gap-2">
               <Plus className="w-4 h-4 text-quizlet-indigo" />
-              <span>Add a new card to this set</span>
+              <span>{t("addNewCard")}</span>
             </h3>
           </div>
 
@@ -299,16 +301,16 @@ export function CardList({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
-              label="Term"
+              label={t("frontLabel")}
               data-testid="inline-front-input"
-              placeholder="Enter term (front)"
+              placeholder={t("frontPlaceholder")}
               value={frontContent}
               onChange={(e) => setFrontContent(e.target.value)}
             />
             <Input
-              label="Definition"
+              label={t("backLabel")}
               data-testid="inline-back-input"
-              placeholder="Enter definition (back)"
+              placeholder={t("backPlaceholder")}
               value={backContent}
               onChange={(e) => setBackContent(e.target.value)}
             />
@@ -317,9 +319,9 @@ export function CardList({
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div className="flex-1 max-w-md">
               <Input
-                label="Hint (Optional)"
+                label={t("hintLabel")}
                 data-testid="inline-hint-input"
-                placeholder="Optional memory hint"
+                placeholder={t("hintPlaceholder")}
                 value={hintContent}
                 onChange={(e) => setHintContent(e.target.value)}
               />
@@ -332,7 +334,7 @@ export function CardList({
               isLoading={isSubmittingCard}
               leftIcon={<Plus className="w-4 h-4" />}
             >
-              Add Card
+              {t("addCard")}
             </Button>
           </div>
         </form>

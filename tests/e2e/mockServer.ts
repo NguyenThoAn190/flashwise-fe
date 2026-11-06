@@ -74,6 +74,8 @@ export interface MockStudySession {
   chunk_size?: number;
   active_chunk?: number;
   total_chunks?: number;
+  /** Danh sách card đã trả lời đúng trong phiên (dùng dựng chunk_cards). */
+  answered_card_ids?: string[];
 }
 
 export interface MockAdaptiveQuestion {
@@ -95,6 +97,16 @@ export interface MockAdaptiveQuestion {
   chunk_size?: number;
   is_review_card?: boolean;
   chunk_gate_passed?: boolean;
+  failed_retry?: boolean;
+  chunk_cards?: Array<{
+    flashcard_id: string;
+    mastery_score: number;
+    state?: number;
+    failed_in_session?: boolean;
+    answered_correct?: boolean;
+  }>;
+  knowledge_progress?: number;
+  chunk_mastered_count?: number;
 }
 
 export interface MockResponse<T = any> {
@@ -1097,6 +1109,35 @@ export class MockApiGatewayServer {
       const isReviewCard = hasChunk && (chunkPos === 2 || chunkPos === 5 || chunkPos === 8);
       const chunkGatePassed =
         hasChunk && session.current_index > 0 && session.current_index % (session.card_ids.length || 1) === 0;
+
+      // Trạng thái từng thẻ trong cụm + tiến độ kiến thức toàn set.
+      let chunkCards: MockAdaptiveQuestion["chunk_cards"];
+      let knowledgeProgress = 0;
+      let chunkMasteredCount = 0;
+      if (hasChunk && set) {
+        const chunkSize = session.chunk_size || 12;
+        const chunkIdx = session.active_chunk ?? 0;
+        const start = chunkIdx * chunkSize;
+        const chunkCardList = set.cards.slice(start, start + chunkSize);
+        const answeredIds = new Set(session.answered_card_ids ?? []);
+        chunkCards = chunkCardList.map((c) => {
+          const answered = answeredIds.has(c.id);
+          return {
+            flashcard_id: c.id,
+            mastery_score: answered ? 60 : 0,
+            // 1=NEW 2=LEARNING 3=FAMILIAR 4=REVIEWING 5=MASTERED
+            state: answered ? 3 : 1,
+            failed_in_session: false,
+            answered_correct: answered,
+          };
+        });
+        chunkMasteredCount = chunkCards.filter((c) => c.answered_correct).length;
+        // Tiến độ kiến thức: số thẻ đã học trong toàn bộ set.
+        const learnedAll = set.cards.filter((c) => answeredIds.has(c.id)).length;
+        knowledgeProgress =
+          set.cards.length > 0 ? Math.round((learnedAll / set.cards.length) * 1000) / 10 : 0;
+      }
+
       const withChunk: MockAdaptiveQuestion = {
         ...question,
         active_chunk: session.active_chunk ?? 0,
@@ -1104,6 +1145,9 @@ export class MockApiGatewayServer {
         chunk_size: session.chunk_size ?? 0,
         is_review_card: isReviewCard,
         chunk_gate_passed: chunkGatePassed,
+        chunk_cards: chunkCards,
+        knowledge_progress: knowledgeProgress,
+        chunk_mastered_count: chunkMasteredCount,
       };
 
       this.activeQuestions.set(qId, withChunk);
@@ -1146,6 +1190,12 @@ export class MockApiGatewayServer {
       if (isCorrect) {
         session.correct_count++;
         if (card) card.state = "mastered";
+        if (card) {
+          session.answered_card_ids = session.answered_card_ids || [];
+          if (!session.answered_card_ids.includes(card.id)) {
+            session.answered_card_ids.push(card.id);
+          }
+        }
       } else {
         session.incorrect_count++;
         if (card) card.state = "learning";

@@ -208,22 +208,40 @@ export default function LearnSessionPage() {
 
   const totalCards = question?.total_cards || 1;
   const currentCardIdx = question?.card_index ?? 0;
-  // Đây là tiến độ *trong cụm hiện tại* (BE TotalQuestions = cụm*2 + ôn).
-  const chunkProgressPct = summary
-    ? 100
-    : Math.min(100, Math.round(((currentCardIdx + (feedback ? 1 : 0)) / totalCards) * 100));
 
   const hasChunk = Boolean(question && (question.total_chunks ?? 0) > 0);
   const activeChunkIdx = question?.active_chunk ?? 0;
   const activeChunk = activeChunkIdx + 1;
   const totalChunks = question?.total_chunks ?? 0;
   const chunkSize = question?.chunk_size ?? chunkSizeSel;
-  // Tiến độ tổng toàn bộ set = (cụm đã xong + % cụm hiện tại) / tổng cụm.
-  const overallPct =
-    hasChunk && totalChunks > 0
-      ? Math.min(100, Math.round(((activeChunkIdx + chunkProgressPct / 100) / totalChunks) * 100))
-      : chunkProgressPct;
+
+  // BE trả về trạng thái từng thẻ trong cụm -> tô màu chính xác từng ô.
+  const chunkCards = question?.chunk_cards ?? [];
+  const chunkMasteredCount = question?.chunk_mastered_count ?? 0;
+
+  // Tiến độ trong cụm: số thẻ đã đạt / tổng thẻ của cụm.
+  const chunkProgressPct = summary
+    ? 100
+    : chunkCards.length > 0
+    ? Math.round((chunkMasteredCount / chunkCards.length) * 100)
+    : Math.min(
+        100,
+        Math.round(((currentCardIdx + (feedback ? 1 : 0)) / totalCards) * 100)
+      );
+
+  // Tiến độ kiến thức TOÀN BỘ set: BE đo theo trạng thái đã học của từng thẻ
+  // (MASTERED 1.0, REVIEWING 0.8, FAMILIAR 0.6, LEARNING 0.3, NEW 0).
+  // Nhờ vậy thanh phản ánh kiến thức thật thay vì vị trí cụm.
+  const knowledgeProgress =
+    typeof question?.knowledge_progress === "number"
+      ? question.knowledge_progress
+      : summary
+      ? 100
+      : 0;
+  const overallPct = Math.round(knowledgeProgress * 10) / 10;
+
   const isReviewCard = Boolean(question?.is_review_card);
+  const isFailedRetry = Boolean(question?.failed_retry);
   const canGoNextChunk = hasChunk && totalChunks > 0 && activeChunk < totalChunks;
   // Vòng ôn tích lũy: cứ xong 3 cụm thì cụm mốc (4, 7, 10...) ép 3 câu đầu ôn từ cũ.
   const isCumulativeChunk =
@@ -281,56 +299,91 @@ export default function LearnSessionPage() {
         </div>
       )}
 
-      {/* Progress Bar — kiểu Quizlet: 12 vạch = 12 từ trong cụm hiện tại */}
+      {/* Progress Bar — kiểu Quizlet: 1 ô = 1 từ trong cụm, tô theo trạng thái thật */}
       {!summary && (
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs font-extrabold">
             <span data-testid="learn-chunk-counter" className="text-quizlet-indigo">
               {hasChunk
-                ? `Cụm ${activeChunk}/${totalChunks} · ${Math.min(chunkSize, Math.floor((chunkProgressPct / 100) * chunkSize))}/${chunkSize} từ`
+                ? `Cụm ${activeChunk}/${totalChunks} · ${chunkMasteredCount}/${chunkCards.length || chunkSize} từ`
                 : `Câu ${currentCardIdx + 1}/${totalCards}`}
             </span>
-            <span className="text-quizlet-slate-secondary">
+            <span
+              data-testid="learn-overall-label"
+              className="text-quizlet-slate-secondary"
+            >
               {hasChunk ? `Tổng tiến độ ${overallPct}%` : `${chunkProgressPct}%`}
             </span>
           </div>
           {hasChunk ? (
             <div className="space-y-1">
               <div data-testid="learn-progress-bar" className="flex gap-1">
-                {Array.from({ length: chunkSize }).map((_, i) => {
-                  const exact = (chunkProgressPct / 100) * chunkSize;
-                  const doneWords = Math.min(chunkSize, Math.floor(exact));
-                  const partial = Math.min(100, Math.max(0, (exact - doneWords) * 100));
-                  const isDone = i < doneWords;
-                  const isCurrent = i === doneWords && chunkProgressPct < 100;
-                  const width = isDone ? 100 : isCurrent ? partial : 0;
-                  return (
-                    <div
-                      key={i}
-                      data-testid={`learn-progress-segment-${i}`}
-                      className="h-2.5 flex-1 bg-quizlet-border-light rounded-full overflow-hidden"
-                    >
+                {chunkCards.length > 0
+                  ? chunkCards.map((card, i) => {
+                      // BE trả state dạng enum: 1=NEW 2=LEARNING 3=FAMILIAR
+                      // 4=REVIEWING 5=MASTERED.
+                      const state = card.state ?? 1;
+                      const isMastered = state >= 4;
+                      const isFamiliar = state === 3;
+                      const isFailed = Boolean(card.failed_in_session);
+                      const isDone = Boolean(card.answered_correct) && !isFailed;
+                      return (
+                        <div
+                          key={card.flashcard_id || i}
+                          data-testid={`learn-progress-segment-${i}`}
+                          data-card-state={state}
+                          title={`Mức độ nhớ: ${Math.round(card.mastery_score)}%`}
+                          className="h-2.5 flex-1 bg-quizlet-border-light rounded-full overflow-hidden"
+                        >
+                          <div
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              isFailed
+                                ? "bg-quizlet-coral"
+                                : isDone || isMastered
+                                ? "bg-quizlet-green"
+                                : isFamiliar
+                                ? "bg-quizlet-green/60"
+                                : state === 2
+                                ? "bg-quizlet-warning"
+                                : "bg-transparent"
+                            }`}
+                            style={{
+                              width: isDone || isMastered || isFamiliar ? "100%" : "0%",
+                            }}
+                          />
+                        </div>
+                      );
+                    })
+                  : Array.from({ length: chunkSize }).map((_, i) => (
                       <div
-                        className={`h-full rounded-full transition-all duration-300 ${
-                          isDone ? "bg-quizlet-green" : isCurrent ? "bg-quizlet-green/70" : "bg-transparent"
-                        }`}
-                        style={{ width: `${width}%` }}
-                      />
-                    </div>
-                  );
-                })}
+                        key={i}
+                        data-testid={`learn-progress-segment-${i}`}
+                        className="h-2.5 flex-1 bg-quizlet-border-light rounded-full overflow-hidden"
+                      >
+                        <div
+                          className="h-full rounded-full transition-all duration-300 bg-quizlet-green"
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              Math.max(
+                                0,
+                                (chunkProgressPct / 100) * chunkSize - i
+                              ) * 100
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    ))}
               </div>
-              {totalChunks > 1 && (
+              <div
+                data-testid="learn-overall-bar"
+                className="w-full h-1.5 bg-quizlet-border-light/60 rounded-full overflow-hidden"
+              >
                 <div
-                  data-testid="learn-overall-bar"
-                  className="w-full h-1 bg-quizlet-border-light/60 rounded-full overflow-hidden"
-                >
-                  <div
-                    className="h-full bg-quizlet-indigo transition-all duration-300 rounded-full"
-                    style={{ width: `${overallPct}%` }}
-                  />
-                </div>
-              )}
+                  className="h-full bg-quizlet-indigo transition-all duration-300 rounded-full"
+                  style={{ width: `${overallPct}%` }}
+                />
+              </div>
             </div>
           ) : (
             <div className="w-full h-2 bg-quizlet-border-light rounded-full overflow-hidden">
@@ -353,12 +406,20 @@ export default function LearnSessionPage() {
           Vòng ôn tích lũy: cụm {activeChunk} mở đầu bằng 3 câu ôn từ các cụm cũ trước khi học từ mới!
         </div>
       )}
+      {!summary && question && isFailedRetry && (
+        <div
+          data-testid="learn-failed-retry-badge"
+          className="rounded-xl border border-quizlet-coral/40 bg-quizlet-coral/10 px-4 py-2 text-sm font-bold text-quizlet-coral"
+        >
+          Học lại từ bạn vừa trả sai — trả lời đúng để đánh dấu thẻ này đã học.
+        </div>
+      )}
       {!summary && question && isReviewCard && (
         <div
           data-testid="learn-review-badge"
-          className="rounded-xl border border-quizlet-amber/40 bg-quizlet-amber/10 px-4 py-2 text-sm font-bold text-quizlet-amber"
+          className="rounded-xl border border-quizlet-warning/40 bg-quizlet-warning/10 px-4 py-2 text-sm font-bold text-quizlet-warning"
         >
-          Đang ôn {`30%`} từ cụm cũ để chống quên — trả lời chắc nhé!
+          Đang ôn từ cụm cũ để chống quên — trả lời chắc nhé!
         </div>
       )}
       {!summary && chunkGateNotice && hasChunk && (
@@ -367,7 +428,7 @@ export default function LearnSessionPage() {
           className="rounded-2xl border border-quizlet-green/40 bg-quizlet-green/10 p-4 flex flex-wrap items-center gap-3"
         >
           <div className="text-sm font-extrabold text-quizlet-green flex-1 min-w-[200px]">
-            Cụm {activeChunk} đã đạt (Familiar + M ≥ 70). Bạn có thể sang cụm tiếp theo!
+            Cụm {activeChunk} đã đạt (Familiar + M ≥ 60). Bạn có thể sang cụm tiếp theo!
           </div>
           <div className="flex gap-2">
             <Button variant="secondary" onClick={handleRestartSameChunk}>
@@ -456,7 +517,17 @@ export default function LearnSessionPage() {
                   question.question_type === "true_false" ||
                   question.question_type === "recall"
                 }
-              />
+              >
+                {/* Đánh giá SRS: đặt hạn ôn tiếp theo cho thẻ.
+                    Trước đây Learn Mode không gọi API này nên NextReviewAt
+                    luôn NULL và cơ chế "ưu tiên ôn thẻ đến hạn" không chạy. */}
+                {feedback.is_correct && question.card_id && (
+                  <SRSRatingBar
+                    cardId={question.card_id}
+                    onRate={handleRateSRS}
+                  />
+                )}
+              </FeedbackBanner>
             )}
           </div>
         )

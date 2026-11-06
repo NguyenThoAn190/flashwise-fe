@@ -27,7 +27,9 @@
       "install": "Install",
       "dismiss": "Dismiss install prompt",
       "iosHint": "Install on iPhone: open in Safari to add to Home Screen.",
-      "iosSteps": "Tap Share → Add to Home Screen"
+      "iosSteps": "Tap Share → Add to Home Screen",
+      "ipadHint": "Install on iPad: open in Safari to add to Home Screen.",
+      "ipadSteps": "Share → Add to Home Screen"
     }
   },
   "nav": {
@@ -297,6 +299,10 @@
     "enterFullscreen": "Enter fullscreen",
     "exitFullscreen": "Exit fullscreen",
     "fullscreenTitle": "Fullscreen (F)",
+    "autoRead": "Auto-read",
+    "enableAutoRead": "Enable auto-read",
+    "disableAutoRead": "Disable auto-read",
+    "autoReadTitle": "Auto-read card face (A)",
     "counter": "{current} / {total}",
     "termsInSet": "Terms in this set ({count})",
     "filterAll": "All ({count})",

@@ -187,4 +187,45 @@ describe("PWA Install — usePWAInstall + InstallAppBanner", () => {
     const banner = await screen.findByTestId("pwa-install-banner");
     expect(banner).toBeInTheDocument();
   });
+
+  it("prompt capture bởi inline <head> script (window.__fwBeforeInstallPrompt) vẫn hiện banner", async () => {
+    // Inline script trong <head> capture event TRƯỚC khi React bundle eval.
+    // Hook phải đọc lại từ global để không miss prompt.
+    localStorage.setItem("pwa-visit-count", "5");
+    const fakePrompt = {
+      prompt: vi.fn().mockResolvedValue(undefined),
+      userChoice: Promise.resolve({ outcome: "accepted", platform: "android" }),
+    };
+    (window as unknown as { __fwBeforeInstallPrompt?: unknown }).__fwBeforeInstallPrompt =
+      fakePrompt;
+
+    render(<InstallAppBanner />);
+    const banner = await screen.findByTestId("pwa-install-banner");
+    expect(banner).toBeInTheDocument();
+    expect(screen.getByTestId("pwa-install-button")).not.toBeDisabled();
+
+    delete (window as unknown as { __fwBeforeInstallPrompt?: unknown })
+      .__fwBeforeInstallPrompt;
+  });
+
+  it("iPadOS (UA Macintosh + maxTouchPoints>1) hiện hướng dẫn iPad, không có nút Install", async () => {
+    localStorage.setItem("pwa-visit-count", "5");
+    setUserAgent(
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
+    );
+    Object.defineProperty(window.navigator, "maxTouchPoints", {
+      value: 5,
+      configurable: true,
+    });
+
+    render(<InstallAppBanner />);
+    const banner = await screen.findByTestId("pwa-install-banner");
+    expect(banner).toBeInTheDocument();
+    // Không có beforeinstallprompt trên iPad → không render nút Install.
+    expect(screen.queryByTestId("pwa-install-button")).not.toBeInTheDocument();
+    // Hướng dẫn riêng cho iPad.
+    expect(banner.textContent).toMatch(/iPad/i);
+
+    delete (window.navigator as unknown as { maxTouchPoints?: number }).maxTouchPoints;
+  });
 });

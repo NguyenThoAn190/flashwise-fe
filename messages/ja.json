@@ -27,7 +27,9 @@
       "install": "インストール",
       "dismiss": "インストール案内を閉じる",
       "iosHint": "iPhoneへのインストール：Safariで開いてホーム画面に追加。",
-      "iosSteps": "共有 → ホーム画面に追加をタップ"
+      "iosSteps": "共有 → ホーム画面に追加をタップ",
+      "ipadHint": "iPad にインストール：Safari で開いてホーム画面に追加します。",
+      "ipadSteps": "共有 → ホーム画面に追加"
     }
   },
   "nav": {
@@ -297,6 +299,10 @@
     "enterFullscreen": "全画面に入る",
     "exitFullscreen": "全画面を終了",
     "fullscreenTitle": "全画面 (F)",
+    "autoRead": "自動読み上げ",
+    "enableAutoRead": "自動読み上げを有効化",
+    "disableAutoRead": "自動読み上げを無効化",
+    "autoReadTitle": "カード面を自動読み上げ (A)",
     "counter": "{current} / {total}",
     "termsInSet": "セット内の用語（{count}）",
     "filterAll": "すべて（{count}）",

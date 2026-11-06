@@ -27,7 +27,9 @@
       "install": "Cài đặt",
       "dismiss": "Ẩn lời mời cài đặt",
       "iosHint": "Cài trên iPhone: mở bằng Safari để thêm vào màn hình chính.",
-      "iosSteps": "Nhấn Chia sẻ → Thêm vào MH chính"
+      "iosSteps": "Nhấn Chia sẻ → Thêm vào MH chính",
+      "ipadHint": "Cài trên iPad: mở bằng Safari để thêm vào màn hình chính.",
+      "ipadSteps": "Chia sẻ → Thêm vào MH chính"
     }
   },
   "nav": {
@@ -297,6 +299,10 @@
     "enterFullscreen": "Vào toàn màn hình",
     "exitFullscreen": "Thoát toàn màn hình",
     "fullscreenTitle": "Toàn màn hình (F)",
+    "autoRead": "Tự đọc",
+    "enableAutoRead": "Bật tự đọc",
+    "disableAutoRead": "Tắt tự đọc",
+    "autoReadTitle": "Tự động đọc mặt thẻ (A)",
     "counter": "{current} / {total}",
     "termsInSet": "Thuật ngữ trong học phần ({count})",
     "filterAll": "Tất cả ({count})",

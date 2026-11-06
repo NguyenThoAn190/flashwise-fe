@@ -44,4 +44,48 @@ describe("PWA manifest + metadata", () => {
     expect(sw).toMatch(/\/api\/v1\//);
     expect(sw).toMatch(/__SW_MANIFEST/);
   });
+
+  it("manifest: icons khai đúng kích thước file thật, không có screenshots sai", () => {
+    const manifest = JSON.parse(
+      readFileSync(resolve(ROOT, "public/manifest.webmanifest"), "utf-8"),
+    );
+
+    // `screenshots` cần ảnh chụp màn hình thật. Khai sai kích thước (ví dụ
+    // logo ngang 384x141 khai là 384x384) làm Chrome cảnh báo manifest invalid.
+    expect(manifest.screenshots ?? []).toEqual([]);
+
+    for (const icon of manifest.icons) {
+      const abs = resolve(ROOT, "public", icon.src.replace(/^\//, ""));
+      expect(existsSync(abs), `icon file missing: ${icon.src}`).toBe(true);
+      const declared = /^(\d+)x(\d+)$/.exec(icon.sizes);
+      expect(declared, `icon sizes invalid: ${icon.sizes}`).toBeTruthy();
+      const [, w, h] = declared!;
+      // File thật phải khớp kích thước khai báo.
+      const buf = readFileSync(abs);
+      const pngW = buf.readUInt32BE(16);
+      const pngH = buf.readUInt32BE(20);
+      expect(`${pngW}x${pngH}`, `icon size mismatch: ${icon.src}`).toBe(
+        `${w}x${h}`,
+      );
+    }
+  });
+
+  it("apple-touch-icon nền đục (iOS không tự bo nền cho icon trong suốt)", () => {
+    const path = resolve(ROOT, "public/apple-touch-icon.png");
+    expect(existsSync(path)).toBe(true);
+    const buf = readFileSync(path);
+    expect(buf.readUInt32BE(16)).toBe(180);
+    expect(buf.readUInt32BE(20)).toBe(180);
+  });
+
+  it("root layout có viewport-fit=cover + mobile-web-app-capable cho iOS", () => {
+    const layout = readFileSync(resolve(ROOT, "src/app/layout.tsx"), "utf-8");
+    // viewport-fit=cover là điều kiện để env(safe-area-inset-*) có giá trị
+    // trên iPhone có notch — thiếu nó thì header chồn lên Dynamic Island.
+    expect(layout).toMatch(/viewportFit:\s*["']cover["']/);
+    // iOS 16.4+ ưu tiên mobile-web-app-capable.
+    expect(layout).toMatch(/mobile-web-app-capable/);
+    // Capture beforeinstallprompt trong <head> để không miss event sớm.
+    expect(layout).toMatch(/__fwBeforeInstallPrompt/);
+  });
 });
