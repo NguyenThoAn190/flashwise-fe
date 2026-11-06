@@ -13,18 +13,38 @@ export interface FlashcardViewerProps {
   className?: string;
 }
 
-export function speakText(text: string, lang = "en-US"): void {
+export function detectSpeakLang(text: string): string {
+  // Tiếng Việt có dấu -> vi-VN, còn lại mặc định en-US
+  if (/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(text)) {
+    return "vi-VN";
+  }
+  return "en-US";
+}
+
+export function speakText(text: string, lang?: string): void {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) {
     return;
   }
+  const clean = text?.trim();
+  if (!clean) return;
   try {
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = lang;
+    const utterance = new SpeechSynthesisUtterance(clean);
+    utterance.lang = lang || detectSpeakLang(clean);
     utterance.rate = 0.95;
     window.speechSynthesis.speak(utterance);
   } catch {
     // Gracefully ignore speech synthesis errors in headless environments
+  }
+}
+
+export function stopSpeaking(): void {
+  try {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+  } catch {
+    // ignore
   }
 }
 
@@ -57,6 +77,13 @@ export function FlashcardViewer({
   const [isShuffled, setIsShuffled] = useState(false);
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
+  const [isAutoRead, setIsAutoRead] = useState(() => {
+    try {
+      return localStorage.getItem("flashwise_auto_read") === "1";
+    } catch {
+      return false;
+    }
+  });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [localStarred, setLocalStarred] = useState<Set<string>>(new Set());
@@ -126,6 +153,19 @@ export function FlashcardViewer({
     setIsAutoPlaying((prev) => !prev);
   }, [orderedCards.length]);
 
+  const handleToggleAutoRead = useCallback(() => {
+    setIsAutoRead((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("flashwise_auto_read", next ? "1" : "0");
+      } catch {
+        // ignore storage errors
+      }
+      if (!next) stopSpeaking();
+      return next;
+    });
+  }, []);
+
   const handleToggleFullscreen = useCallback(() => {
     setIsFullscreen((prev) => !prev);
   }, []);
@@ -135,6 +175,31 @@ export function FlashcardViewer({
     setIsFlipped(false);
     setShowHint(false);
   }, []);
+
+  // Auto-read visible face when card / flip / direction changes
+  useEffect(() => {
+    if (!isAutoRead) return;
+    const card = orderedCards[currentIndex];
+    if (!card) return;
+    const rawF = card.front_content || (card as { front_text?: string }).front_text || "";
+    const rawB = card.back_content || (card as { back_text?: string }).back_text || "";
+    const visible = isFlipped
+      ? direction === "term_first"
+        ? rawB
+        : rawF
+      : direction === "term_first"
+        ? rawF
+        : rawB;
+    if (!visible?.trim()) return;
+    const timer = setTimeout(() => speakText(visible), 180);
+    return () => {
+      clearTimeout(timer);
+      stopSpeaking();
+    };
+  }, [isAutoRead, currentIndex, isFlipped, direction, orderedCards]);
+
+  // Stop speaking on unmount
+  useEffect(() => () => stopSpeaking(), []);
 
   // Autoplay timer
   useEffect(() => {
@@ -172,6 +237,9 @@ export function FlashcardViewer({
       } else if (e.key === "s" || e.key === "S") {
         e.preventDefault();
         handleToggleShuffle();
+      } else if (e.key === "a" || e.key === "A") {
+        e.preventDefault();
+        handleToggleAutoRead();
       } else if (e.key === "p" || e.key === "P") {
         e.preventDefault();
         handleToggleAutoPlay();
@@ -191,6 +259,7 @@ export function FlashcardViewer({
     handleNext,
     handlePrev,
     handleToggleShuffle,
+    handleToggleAutoRead,
     handleToggleAutoPlay,
     handleToggleFullscreen,
     isFullscreen,
@@ -428,6 +497,7 @@ export function FlashcardViewer({
           isFlipped={isFlipped}
           isShuffled={isShuffled}
           isAutoPlaying={isAutoPlaying}
+          isAutoRead={isAutoRead}
           isFullscreen={isFullscreen}
           direction={direction}
           onPrev={handlePrev}
@@ -435,6 +505,7 @@ export function FlashcardViewer({
           onFlip={handleFlip}
           onToggleShuffle={handleToggleShuffle}
           onToggleAutoPlay={handleToggleAutoPlay}
+          onToggleAutoRead={handleToggleAutoRead}
           onToggleFullscreen={handleToggleFullscreen}
           onToggleDirection={handleToggleDirection}
         />
@@ -462,6 +533,12 @@ export function FlashcardViewer({
               S
             </kbd>{" "}
             Shuffle
+          </span>
+          <span>
+            <kbd className="px-1.5 py-0.5 rounded bg-quizlet-surface border border-quizlet-border text-quizlet-slate font-semibold">
+              A
+            </kbd>{" "}
+            Tự đọc
           </span>
           <span>
             <kbd className="px-1.5 py-0.5 rounded bg-quizlet-surface border border-quizlet-border text-quizlet-slate font-semibold">

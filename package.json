@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "next dev",
+    "dev:pwa": "PWA_SW_IN_DEV=1 next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

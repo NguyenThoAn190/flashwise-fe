@@ -4,12 +4,19 @@ import withSerwistInit from "@serwist/next";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
-// Serwist: sinh /sw.js ở production, tắt ở dev để tránh cache làm khó debug.
+// Serwist: sinh /sw.js ở production.
 // swSrc là source worker, swDest là file serve từ public.
+//
+// Mặc định tắt ở dev để tránh cache làm khó debug. Nhưng Chrome chỉ fire
+// `beforeinstallprompt` khi đã có service worker đăng ký thành công, nên
+// muốn test PWA install ở dev thì bật bằng: PWA_SW_IN_DEV=1 pnpm dev
+// (Serwist tự bỏ precache manifest khi dev, chỉ còn runtime cache).
+const enableSwInDev = process.env.PWA_SW_IN_DEV === "1";
+
 const withSerwist = withSerwistInit({
   swSrc: "src/app/sw.ts",
   swDest: "public/sw.js",
-  disable: process.env.NODE_ENV === "development",
+  disable: process.env.NODE_ENV === "development" && !enableSwInDev,
   cacheOnNavigation: true,
   reloadOnOnline: true,
 });

@@ -208,14 +208,21 @@ export default function LearnSessionPage() {
 
   const totalCards = question?.total_cards || 1;
   const currentCardIdx = question?.card_index ?? 0;
-  const progressPct = summary
+  // Đây là tiến độ *trong cụm hiện tại* (BE TotalQuestions = cụm*2 + ôn).
+  const chunkProgressPct = summary
     ? 100
     : Math.min(100, Math.round(((currentCardIdx + (feedback ? 1 : 0)) / totalCards) * 100));
 
   const hasChunk = Boolean(question && (question.total_chunks ?? 0) > 0);
-  const activeChunk = (question?.active_chunk ?? 0) + 1;
+  const activeChunkIdx = question?.active_chunk ?? 0;
+  const activeChunk = activeChunkIdx + 1;
   const totalChunks = question?.total_chunks ?? 0;
   const chunkSize = question?.chunk_size ?? chunkSizeSel;
+  // Tiến độ tổng toàn bộ set = (cụm đã xong + % cụm hiện tại) / tổng cụm.
+  const overallPct =
+    hasChunk && totalChunks > 0
+      ? Math.min(100, Math.round(((activeChunkIdx + chunkProgressPct / 100) / totalChunks) * 100))
+      : chunkProgressPct;
   const isReviewCard = Boolean(question?.is_review_card);
   const canGoNextChunk = hasChunk && totalChunks > 0 && activeChunk < totalChunks;
   // Vòng ôn tích lũy: cứ xong 3 cụm thì cụm mốc (4, 7, 10...) ép 3 câu đầu ôn từ cũ.
@@ -271,22 +278,71 @@ export default function LearnSessionPage() {
               {size} từ
             </button>
           ))}
-          {hasChunk && (
-            <span data-testid="learn-chunk-counter" className="text-xs font-extrabold text-quizlet-indigo ml-auto">
-              Cụm {activeChunk}/{totalChunks} · {chunkSize} từ/cụm
-            </span>
-          )}
         </div>
       )}
 
-      {/* Progress Bar */}
-      <div className="w-full h-2 bg-quizlet-border-light rounded-full overflow-hidden">
-        <div
-          data-testid="learn-progress-bar"
-          className="h-full bg-quizlet-green transition-all duration-300 rounded-full"
-          style={{ width: `${progressPct}%` }}
-        />
-      </div>
+      {/* Progress Bar — kiểu Quizlet: 12 vạch = 12 từ trong cụm hiện tại */}
+      {!summary && (
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-xs font-extrabold">
+            <span data-testid="learn-chunk-counter" className="text-quizlet-indigo">
+              {hasChunk
+                ? `Cụm ${activeChunk}/${totalChunks} · ${Math.min(chunkSize, Math.floor((chunkProgressPct / 100) * chunkSize))}/${chunkSize} từ`
+                : `Câu ${currentCardIdx + 1}/${totalCards}`}
+            </span>
+            <span className="text-quizlet-slate-secondary">
+              {hasChunk ? `Tổng tiến độ ${overallPct}%` : `${chunkProgressPct}%`}
+            </span>
+          </div>
+          {hasChunk ? (
+            <div className="space-y-1">
+              <div data-testid="learn-progress-bar" className="flex gap-1">
+                {Array.from({ length: chunkSize }).map((_, i) => {
+                  const exact = (chunkProgressPct / 100) * chunkSize;
+                  const doneWords = Math.min(chunkSize, Math.floor(exact));
+                  const partial = Math.min(100, Math.max(0, (exact - doneWords) * 100));
+                  const isDone = i < doneWords;
+                  const isCurrent = i === doneWords && chunkProgressPct < 100;
+                  const width = isDone ? 100 : isCurrent ? partial : 0;
+                  return (
+                    <div
+                      key={i}
+                      data-testid={`learn-progress-segment-${i}`}
+                      className="h-2.5 flex-1 bg-quizlet-border-light rounded-full overflow-hidden"
+                    >
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          isDone ? "bg-quizlet-green" : isCurrent ? "bg-quizlet-green/70" : "bg-transparent"
+                        }`}
+                        style={{ width: `${width}%` }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+              {totalChunks > 1 && (
+                <div
+                  data-testid="learn-overall-bar"
+                  className="w-full h-1 bg-quizlet-border-light/60 rounded-full overflow-hidden"
+                >
+                  <div
+                    className="h-full bg-quizlet-indigo transition-all duration-300 rounded-full"
+                    style={{ width: `${overallPct}%` }}
+                  />
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="w-full h-2 bg-quizlet-border-light rounded-full overflow-hidden">
+              <div
+                data-testid="learn-progress-bar"
+                className="h-full bg-quizlet-green transition-all duration-300 rounded-full"
+                style={{ width: `${chunkProgressPct}%` }}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Review + gate notices */}
       {!summary && question && isCumulativeChunk && (

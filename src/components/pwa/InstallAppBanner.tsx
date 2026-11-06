@@ -16,7 +16,7 @@ export function InstallAppBanner() {
       role="dialog"
       aria-label={t("title")}
       data-testid="pwa-install-banner"
-      className="md:hidden fixed bottom-3 inset-x-3 z-50 rounded-2xl border border-quizlet-border-light bg-quizlet-surface shadow-dropdown p-3.5 flex items-start gap-3"
+      className="md:hidden fixed bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] inset-x-3 z-50 rounded-2xl border border-quizlet-border-light bg-quizlet-surface shadow-dropdown p-3.5 flex items-start gap-3"
     >
       <div className="w-10 h-10 rounded-xl bg-quizlet-indigo flex items-center justify-center shrink-0">
         <Download className="w-5 h-5 text-white" aria-hidden="true" />

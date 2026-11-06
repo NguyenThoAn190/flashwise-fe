@@ -19,7 +19,16 @@ const MOBILE_MAX_WIDTH = 768;
 // (chuyển locale / client navigation) thì state trong hook sẽ mất prompt
 // -> banner "lúc hiện lúc không". Cache ở module + listener toàn cục gắn
 // ngay khi bundle client được load để không bao giờ miss event.
+//
+// Ngoài ra: script inline trong <head> của root layout capture event ngay từ
+// đầu (trước khi React bundle eval) và lưu vào window.__fwBeforeInstallPrompt.
+// Chrome thường fire event này rất sớm (ngay khi SW active) nên chỉ listen
+// trong useEffect là không đủ tin cậy.
 // ---------------------------------------------------------------------------
+type PwaGlobal = Window & {
+  __fwBeforeInstallPrompt?: BeforeInstallPromptEvent | null;
+};
+
 let cachedPrompt: BeforeInstallPromptEvent | null = null;
 let globalListenerAttached = false;
 const promptSubscribers = new Set<(p: BeforeInstallPromptEvent | null) => void>();
@@ -34,6 +43,12 @@ function notifyPromptSubscribers() {
   });
 }
 
+function readGlobalPrompt(): BeforeInstallPromptEvent | null {
+  if (typeof window === "undefined") return null;
+  const g = window as PwaGlobal;
+  return g.__fwBeforeInstallPrompt ?? null;
+}
+
 function attachGlobalPromptListener() {
   if (globalListenerAttached || typeof window === "undefined") return;
   globalListenerAttached = true;
@@ -46,10 +61,21 @@ function attachGlobalPromptListener() {
     cachedPrompt = null;
     notifyPromptSubscribers();
   });
+  // Event bridge từ inline <head> script (capture sớm hơn React).
+  window.addEventListener("fw:beforeinstallprompt", () => {
+    cachedPrompt = readGlobalPrompt();
+    notifyPromptSubscribers();
+  });
+  window.addEventListener("fw:appinstalled", () => {
+    cachedPrompt = null;
+    notifyPromptSubscribers();
+  });
 }
 
 if (typeof window !== "undefined") {
   attachGlobalPromptListener();
+  // Nếu script inline đã capture trước khi module này eval, lấy lại prompt.
+  cachedPrompt = readGlobalPrompt();
 }
 
 /** Chỉ dùng cho test: xóa prompt đã cache giữa các test để không rò rỉ. */
@@ -67,7 +93,28 @@ function isStandalone(): boolean {
 function isIos(): boolean {
   if (typeof window === "undefined") return false;
   const ua = window.navigator.userAgent;
-  return /iphone|ipad|ipod/i.test(ua) && !(window as unknown as { MSStream?: unknown }).MSStream;
+  if (/iphone|ipad|ipod/i.test(ua) && !(window as unknown as { MSStream?: unknown }).MSStream) {
+    return true;
+  }
+  // iPadOS 13+ giả lập desktop Safari: UA = "Macintosh", nhưng vẫn là iPad.
+  // Dò bằng maxTouchPoints > 1 để không nhầm với Mac thật (touchPoints = 0).
+  const nav = window.navigator as unknown as { maxTouchPoints?: number; platform?: string };
+  return (
+    /Macintosh/i.test(ua) &&
+    typeof nav.maxTouchPoints === "number" &&
+    nav.maxTouchPoints > 1
+  );
+}
+
+/** iPadOS: Safari không có beforeinstallprompt, cũng không có Share menu iOS. */
+function isIpad(): boolean {
+  if (typeof window === "undefined") return false;
+  const nav = window.navigator as unknown as { maxTouchPoints?: number };
+  return (
+    typeof nav.maxTouchPoints === "number" &&
+    nav.maxTouchPoints > 1 &&
+    !/iphone|ipad|ipod/i.test(window.navigator.userAgent)
+  );
 }
 
 function shouldSuppressByDismiss(): boolean {

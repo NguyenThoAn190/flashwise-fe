@@ -5,6 +5,7 @@ import {
   Shuffle,
   Play,
   Pause,
+  Volume2,
   Maximize2,
   Minimize2,
   ArrowLeftRight,
@@ -21,6 +22,7 @@ export interface CardToolbarProps {
   isFlipped: boolean;
   isShuffled: boolean;
   isAutoPlaying: boolean;
+  isAutoRead: boolean;
   isFullscreen: boolean;
   direction: FlashcardStudyDirection;
   onPrev: () => void;
@@ -28,6 +30,7 @@ export interface CardToolbarProps {
   onFlip: () => void;
   onToggleShuffle: () => void;
   onToggleAutoPlay: () => void;
+  onToggleAutoRead: () => void;
   onToggleFullscreen: () => void;
   onToggleDirection: () => void;
 }
@@ -38,6 +41,7 @@ export function CardToolbar({
   isFlipped,
   isShuffled,
   isAutoPlaying,
+  isAutoRead,
   isFullscreen,
   direction,
   onPrev,
@@ -45,6 +49,7 @@ export function CardToolbar({
   onFlip,
   onToggleShuffle,
   onToggleAutoPlay,
+  onToggleAutoRead,
   onToggleFullscreen,
   onToggleDirection,
 }: CardToolbarProps) {
@@ -105,6 +110,23 @@ export function CardToolbar({
           >
             <Shuffle className="w-4 h-4" />
             <span className="hidden sm:inline">Shuffle</span>
+          </button>
+
+          <button
+            type="button"
+            data-testid="toolbar-autoread-btn"
+            onClick={onToggleAutoRead}
+            aria-pressed={isAutoRead}
+            aria-label={isAutoRead ? "Tắt tự động đọc" : "Bật tự động đọc"}
+            title="Tự động đọc mặt thẻ (A)"
+            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold border transition-colors cursor-pointer ${
+              isAutoRead
+                ? "bg-quizlet-indigo-light border-quizlet-indigo text-quizlet-indigo"
+                : "bg-quizlet-surface border-quizlet-border text-quizlet-slate-secondary hover:bg-quizlet-surface-hover hover:text-quizlet-slate"
+            }`}
+          >
+            <Volume2 className="w-4 h-4" />
+            <span className="hidden sm:inline">Tự đọc</span>
           </button>
         </div>
 
