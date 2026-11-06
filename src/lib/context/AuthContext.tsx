@@ -34,14 +34,25 @@ import {
   setCachedUser,
   onStorageAuthChange,
 } from "@/lib/api/storage";
+import {
+  prefetchDashboardData,
+  clearDashboardPrefetch,
+} from "@/lib/api/dashboardPrefetch";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export interface AuthProviderProps {
   children: ReactNode;
+  /**
+   * Server-side hint from `getServerAuthHint()` (cookie presence).
+   * - false: no token cookie, skip the verify wait and render guest instantly.
+   * - true/undefined: keep `isLoading=true` until `restoreSession` finishes.
+   * Never trusted for auth decisions, only for first-paint branching.
+   */
+  initialHasToken?: boolean;
 }
 
-export function AuthProvider({ children }: AuthProviderProps) {
+export function AuthProvider({ children, initialHasToken }: AuthProviderProps) {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -49,8 +60,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // tránh hydration mismatch. Session sẽ được khôi phục trong useEffect.
   const [user, setUser] = useState<UserProfile | null>(null);
 
-  // Loading state remains true until initial session restoration completes
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  // Loading state remains true until initial session restoration completes.
+  // Guest (server says no token cookie) starts unblocked so `/` paints
+  // landing immediately without one wasted loading tick.
+  // `initialHasToken` is also exposed via context as `hasTokenHint` so
+  // `HomeSwitcher`/Header can branch first-paint without hydration mismatch.
+  const [isLoading, setIsLoading] = useState<boolean>(() =>
+    initialHasToken === false ? false : true
+  );
 
   const isAuthenticated = useMemo(() => Boolean(user), [user]);
 
@@ -75,12 +92,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       // 1. If no access token exists, mark loading false and clear user
       if (!hasAccessToken()) {
+        clearDashboardPrefetch();
         if (isMounted) {
           setUser(null);
           setIsLoading(false);
         }
         return;
       }
+
+      // Song song hóa: study-sets + due-reviews bay ngay khi thấy token,
+      // cùng lúc với apiGetProfile() verify bên dưới — DashboardHome sẽ
+      // consume promise có sẵn thay vì chờ verify xong mới fetch (1 waterfall).
+      prefetchDashboardData();
 
       // 2. Access token exists: verify and fetch fresh profile
       try {
@@ -285,8 +308,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       signup,
       logout,
       refreshProfile,
+      hasTokenHint: initialHasToken,
     }),
-    [user, isAuthenticated, isLoading, login, loginGoogle, loginGoogleCode, signup, logout, refreshProfile]
+    [user, isAuthenticated, isLoading, login, loginGoogle, loginGoogleCode, signup, logout, refreshProfile, initialHasToken]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

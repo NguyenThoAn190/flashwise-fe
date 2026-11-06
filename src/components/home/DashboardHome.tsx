@@ -10,6 +10,10 @@ import {
   apiGetDueReviews,
   apiUpdateStudySet,
 } from "@/lib/api/studySets";
+import {
+  consumePrefetchedDueReviews,
+  consumePrefetchedStudySets,
+} from "@/lib/api/dashboardPrefetch";
 import { StudySet, StudySetFilter, DueReviewsSummary } from "@/types/studySet";
 import { DueReviewsBanner } from "@/components/layout/DueReviewsBanner";
 import { StudySetCard, StudySetCardSkeleton, EmptyStudySets } from "@/components/sets";
@@ -48,11 +52,17 @@ export function DashboardHome() {
     if (!isAuthenticated) return;
     setIsLoadingSets(true);
     setErrorMessage(null);
+    // Prefetch reuse: only when params match the prefetched default
+    // (filter=mine, no search). Other tabs/searches fetch normally.
+    const isDefaultParams = activeTab === "mine" && !searchQuery.trim();
+    const prefetched = isDefaultParams ? consumePrefetchedStudySets() : null;
     try {
-      const response = await apiGetStudySets({
-        filter: activeTab,
-        search: searchQuery.trim() || undefined,
-      });
+      const response = prefetched
+        ? await prefetched
+        : await apiGetStudySets({
+            filter: activeTab,
+            search: searchQuery.trim() || undefined,
+          });
       setStudySets(response.items || []);
     } catch (err: any) {
       setErrorMessage(err?.message || t("loadError"));
@@ -64,8 +74,9 @@ export function DashboardHome() {
   const loadDueReviews = useCallback(async () => {
     if (!isAuthenticated) return;
     setIsLoadingDue(true);
+    const prefetched = consumePrefetchedDueReviews();
     try {
-      const data = await apiGetDueReviews();
+      const data = prefetched ? await prefetched : await apiGetDueReviews();
       setDueReviews(data);
     } catch {
       setDueReviews(null);

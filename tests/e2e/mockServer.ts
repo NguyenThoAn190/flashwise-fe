@@ -70,6 +70,10 @@ export interface MockStudySession {
   correct_count: number;
   incorrect_count: number;
   created_at: string;
+  // Học theo chặng nhỏ (đồng bộ BE/FE).
+  chunk_size?: number;
+  active_chunk?: number;
+  total_chunks?: number;
 }
 
 export interface MockAdaptiveQuestion {
@@ -85,6 +89,12 @@ export interface MockAdaptiveQuestion {
   expected_answer?: string;
   card_index: number;
   total_cards: number;
+  // Học theo chặng nhỏ.
+  active_chunk?: number;
+  total_chunks?: number;
+  chunk_size?: number;
+  is_review_card?: boolean;
+  chunk_gate_passed?: boolean;
 }
 
 export interface MockResponse<T = any> {
@@ -922,8 +932,30 @@ export class MockApiGatewayServer {
         return json(400, { error: "Cannot start a session on an empty study set" });
       }
 
-      const { mode = "learn", direction = "term_first" } = body || {};
+      const { mode = "learn", direction = "term_first", chunk_size = 0, chunk_index = 0 } = body || {};
       const user = this.extractBearerUser(headers);
+
+      // Học theo chặng nhỏ: chuẩn hóa 8/12/15, 0 = tự động (kho >12 từ thì dùng 12).
+      const normalizeChunk = (v: number) => {
+        if (!v || v <= 0) return set.cards.length > 12 ? 12 : 0;
+        if (v === 8 || v === 12 || v === 15) return v;
+        if (v < 8) return 8;
+        if (v <= 10) return 8;
+        if (v <= 13) return 12;
+        return 15;
+      };
+      const effChunk = normalizeChunk(Number(chunk_size) || 0);
+      let totalChunks = 0;
+      let activeChunk = 0;
+      let cardIds = set.cards.map((c) => c.id);
+      let totalCards = set.cards.length;
+      if (effChunk > 0) {
+        totalChunks = Math.ceil(set.cards.length / effChunk);
+        activeChunk = Math.max(0, Math.min(Number(chunk_index) || 0, totalChunks - 1));
+        const start = activeChunk * effChunk;
+        cardIds = set.cards.slice(start, start + effChunk).map((c) => c.id);
+        totalCards = totalChunks <= 1 ? cardIds.length : cardIds.length * 2 + Math.floor(cardIds.length * 0.5);
+      }
 
       const sessionId = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
       const session: MockStudySession = {
@@ -933,12 +965,15 @@ export class MockApiGatewayServer {
         mode,
         direction,
         status: "in_progress",
-        total_cards: set.cards.length,
+        total_cards: totalCards,
         current_index: 0,
-        card_ids: set.cards.map((c) => c.id),
+        card_ids: cardIds,
         correct_count: 0,
         incorrect_count: 0,
         created_at: new Date().toISOString(),
+        chunk_size: effChunk,
+        active_chunk: activeChunk,
+        total_chunks: totalChunks,
       };
 
       this.sessions.set(sessionId, session);
@@ -950,6 +985,9 @@ export class MockApiGatewayServer {
         status: session.status,
         total_cards: session.total_cards,
         current_index: session.current_index,
+        chunk_size: effChunk,
+        active_chunk: activeChunk,
+        total_chunks: totalChunks,
       });
     }
 
@@ -1053,8 +1091,23 @@ export class MockApiGatewayServer {
         };
       }
 
-      this.activeQuestions.set(qId, question);
-      return json(200, question);
+      // Học theo chặng: gắn metadata cụm để FE hiển thị tiến độ + badge ôn cũ.
+      const hasChunk = (session.chunk_size || 0) > 0;
+      const chunkPos = hasChunk ? session.current_index % 10 : -1;
+      const isReviewCard = hasChunk && (chunkPos === 2 || chunkPos === 5 || chunkPos === 8);
+      const chunkGatePassed =
+        hasChunk && session.current_index > 0 && session.current_index % (session.card_ids.length || 1) === 0;
+      const withChunk: MockAdaptiveQuestion = {
+        ...question,
+        active_chunk: session.active_chunk ?? 0,
+        total_chunks: session.total_chunks ?? 0,
+        chunk_size: session.chunk_size ?? 0,
+        is_review_card: isReviewCard,
+        chunk_gate_passed: chunkGatePassed,
+      };
+
+      this.activeQuestions.set(qId, withChunk);
+      return json(200, withChunk);
     }
 
     const submitAnswerMatch = path.match(/^\/api\/v1\/quizlet\/sessions\/([^/]+)\/submit$/);

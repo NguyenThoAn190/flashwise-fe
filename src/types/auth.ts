@@ -105,4 +105,10 @@ export interface AuthContextType extends AuthState {
   signup: (data: SignupData) => Promise<UserProfile>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<UserProfile | null>;
+  /**
+   * Server cookie hint (`initialHasToken` from `getServerAuthHint()`).
+   * True when a token cookie was present on the request. Client components
+   * (HomeSwitcher/Header) use it for first-paint branching only.
+   */
+  hasTokenHint?: boolean;
 }

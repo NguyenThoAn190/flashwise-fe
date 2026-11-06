@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/context/AuthContext";
+import { useHasTokenHint } from "@/lib/auth/useHasTokenHint";
 import { Button } from "@/components/ui/Button";
 import { Dropdown, DropdownItem, DropdownDivider } from "@/components/ui/Dropdown";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
@@ -31,11 +32,18 @@ export interface HeaderProps {
 
 export function Header({ onSearch, className }: HeaderProps) {
   const t = useTranslations("nav");
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const hasTokenHint = useHasTokenHint();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  // Maybe-authed first paint (token cookie existed, profile verifying):
+  // reserve the authed action width so header -> dashboard swap has no CLS.
+  // Guest/SEO path (no hint) keeps the public login/signup actions.
+  const showAuthedActions =
+    isAuthenticated || (isLoading && hasTokenHint === true);
 
   const streak = user?.stats?.current_streak ?? 0;
   const initials = user?.full_name
@@ -103,9 +111,9 @@ export function Header({ onSearch, className }: HeaderProps) {
                 {t("home")}
               </Link>
               {/* Công cụ học chỉ hiện khi chưa đăng nhập */}
-              {!isAuthenticated ? <StudyToolsMenu /> : null}
+              {!showAuthedActions ? <StudyToolsMenu /> : null}
               {/* Thư viện + Tiến độ chỉ hiện khi đã đăng nhập — menu công khai không có */}
-              {isAuthenticated ? (
+              {showAuthedActions ? (
                 <>
                   <Link
                     href="/library"
@@ -152,7 +160,16 @@ export function Header({ onSearch, className }: HeaderProps) {
               <LanguageSwitcher variant="icon" />
             </div>
 
-            {/* Create Dropdown — chỉ hiện khi đã đăng nhập */}
+            {/* Create Dropdown — chỉ hiện khi đã đăng nhập.
+                Maybe-authed (đang verify): giữ placeholder cùng kích thước
+                để không CLS khi nút thật mount. */}
+            {showAuthedActions && !user ? (
+              <div
+                aria-hidden="true"
+                data-testid="header-create-skeleton"
+                className="h-8 w-8 sm:w-[92px] rounded-lg bg-quizlet-canvas animate-pulse shrink-0"
+              />
+            ) : null}
             {isAuthenticated && (
             <Dropdown
               align="right"
@@ -183,6 +200,13 @@ export function Header({ onSearch, className }: HeaderProps) {
             )}
 
             {/* Streak Counter Badge */}
+            {showAuthedActions && !user ? (
+              <div
+                aria-hidden="true"
+                data-testid="header-streak-skeleton"
+                className="h-8 w-14 rounded-full bg-quizlet-canvas animate-pulse shrink-0"
+              />
+            ) : null}
             {isAuthenticated && (
               <div
                 className="inline-flex items-center justify-center gap-1.5 h-8 px-2.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold select-none cursor-default shrink-0"
@@ -195,8 +219,17 @@ export function Header({ onSearch, className }: HeaderProps) {
               </div>
             )}
 
-            {/* User Profile Dropdown or Auth Links */}
-            {isAuthenticated && user ? (
+            {/* User Profile Dropdown or Auth Links.
+                Maybe-authed chưa có user: avatar placeholder cùng kích thước,
+                ẩn login/signup để không swap gây CLS. */}
+            {showAuthedActions && !user ? (
+              <div
+                aria-hidden="true"
+                data-testid="header-avatar-skeleton"
+                className="h-8 w-8 rounded-full bg-quizlet-canvas animate-pulse shrink-0"
+              />
+            ) : null}
+            {isAuthenticated ? (
               <Dropdown
                 align="right"
                 isOpen={isProfileOpen}
@@ -207,7 +240,7 @@ export function Header({ onSearch, className }: HeaderProps) {
                     data-testid="header-avatar-trigger"
                     aria-label={t("userMenu")}
                   >
-                    {user.avatar_url ? (
+                    {user?.avatar_url ? (
                       <img
                         src={user.avatar_url}
                         alt={user.full_name || "User avatar"}
@@ -225,7 +258,7 @@ export function Header({ onSearch, className }: HeaderProps) {
                 {/* User Info Header Card */}
                 <div className="px-3.5 py-2.5 border-b border-quizlet-border-light">
                   <div className="flex items-center gap-2.5">
-                    {user.avatar_url ? (
+                    {user?.avatar_url ? (
                       <img
                         src={user.avatar_url}
                         alt=""
@@ -238,15 +271,15 @@ export function Header({ onSearch, className }: HeaderProps) {
                     )}
                     <div className="overflow-hidden min-w-0">
                       <p className="font-bold text-sm text-quizlet-slate truncate">
-                        {user.full_name || user.username}
+                        {user?.full_name || user?.username || "…"}
                       </p>
-                      {user.username && (
+                      {user?.username && (
                         <p className="text-xs text-quizlet-slate-secondary truncate">
                           @{user.username}
                         </p>
                       )}
                       <p className="text-xs text-quizlet-slate-muted truncate">
-                        {user.email}
+                        {user?.email || "…"}
                       </p>
                     </div>
                   </div>
@@ -281,6 +314,10 @@ export function Header({ onSearch, className }: HeaderProps) {
                   }}
                 />
               </Dropdown>
+            ) : showAuthedActions ? (
+              // Maybe-authed verifying: skeletons above already reserve width.
+              // Render nothing else so login/signup never flash mid-verify.
+              null
             ) : (
               <div className="flex items-center gap-1">
                 <Link

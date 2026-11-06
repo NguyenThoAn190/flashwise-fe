@@ -68,7 +68,14 @@
     "toolsGroupsDesc": "一起学习、分享学习集",
     "toolsLive": "直播课堂",
     "toolsLiveDesc": "与老师实时上课",
-    "comingSoon": "即将上线"
+    "comingSoon": "即将上线",
+    "bottomHome": "首页",
+    "bottomLibrary": "资料库",
+    "bottomCreate": "创建",
+    "bottomProgress": "进度",
+    "bottomProfile": "我的",
+    "bottomBarAria": "移动端主导航",
+    "drawerBottomHint": "请用底部导航在首页、资料库、进度和我的之间切换。"
   },
   "auth": {
     "loginTab": "登录",

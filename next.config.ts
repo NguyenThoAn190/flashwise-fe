@@ -35,6 +35,32 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // Trang chủ `/` render theo cookie auth (guest -> landing SSR,
+        // maybe-authed -> dashboard skeleton). Báo cho CDN/proxy biết
+        // response biến thiên theo Cookie để không phục vụ nhầm bản
+        // landing cache cho user đã login (và ngược lại).
+        // Bot SEO không gửi cookie nên luôn trúng bản landing đầy đủ.
+        source: "/",
+        headers: [
+          {
+            key: "Vary",
+            value: "Cookie, Accept-Language",
+          },
+        ],
+      },
+      {
+        // Home theo locale tiền tố (/en, /vi, ...): layout giữ static để SEO
+        // cache tốt; hint auth cho các URL này do client nâng cấp sau
+        // hydration (root `/` mới là đường SEO + traffic chính, đã dynamic).
+        source: "/:locale",
+        headers: [
+          {
+            key: "Vary",
+            value: "Accept-Language",
+          },
+        ],
+      },
+      {
         // Logo/favicon trong public/: cache lâu, revalidate ngầm
         source: "/images/logos/:path*",
         headers: [

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Header } from "@/components/layout/Header";
+import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 
 export default function DashboardLayout({
   children,
@@ -14,7 +15,11 @@ export default function DashboardLayout({
       <Header />
 
       {/* Single-route main: landing renders full-width, dashboard pages own their containers */}
-      <main className="flex-1 w-full">{children}</main>
+      {/* pb-20 trên mobile để không bị MobileBottomNav che CTA, desktop giữ nguyên */}
+      <main className="flex-1 w-full pb-20 md:pb-0">{children}</main>
+
+      {/* Bottom tab bar mobile kiểu app — chỉ hiện sau đăng nhập */}
+      <MobileBottomNav />
     </div>
   );
 }

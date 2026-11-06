@@ -7,3 +7,4 @@ export * from "./LoginForm";
 export * from "./SignupForm";
 export * from "./GoogleAuthProvider";
 export * from "./GoogleLoginButton";
+export * from "./GoogleOneTap";

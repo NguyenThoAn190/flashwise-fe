@@ -68,7 +68,14 @@
     "toolsGroupsDesc": "함께 배우고 세트 공유",
     "toolsLive": "라이브",
     "toolsLiveDesc": "선생님과 실시간 수업",
-    "comingSoon": "곧 출시"
+    "comingSoon": "곧 출시",
+    "bottomHome": "홈",
+    "bottomLibrary": "라이브러리",
+    "bottomCreate": "만들기",
+    "bottomProgress": "진도",
+    "bottomProfile": "나",
+    "bottomBarAria": "모바일 기본 탐색",
+    "drawerBottomHint": "홈·라이브러리·진도·나는 하단 바로 이동하세요."
   },
   "auth": {
     "loginTab": "로그인",

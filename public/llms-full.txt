@@ -1,0 +1,73 @@
+# Flashwise — llms-full.txt (updated 2026-11-06)
+
+## 1. One-paragraph definition (quote-ready, 40-60 words)
+
+Flashwise is a free flashcard platform for fast memorization: 3D flip
+cards with shuffle, autoplay and fullscreen; adaptive Learn mode mixing
+MCQ, true/false and written recall with instant grading; 5-layer spaced
+repetition SRS scheduling; and a real-time progress dashboard. Create a
+study set in 1 minute on web and mobile.
+
+Định nghĩa ngắn: Flashwise là nền tảng flashcard miễn phí giúp ghi nhớ
+nhanh bằng thẻ lật 3D, chế độ Learn thích ứng, SRS 5 tầng và dashboard
+tiến độ theo thời gian thực. Tạo học phần trong 1 phút.
+
+## 2. Canonical URLs
+
+- vi Home: https://flashwise.app/
+- en Home: https://flashwise.app/en
+- zh Home: https://flashwise.app/zh
+- ja Home: https://flashwise.app/ja
+- ko Home: https://flashwise.app/ko
+- Sitemap: https://flashwise.app/sitemap.xml
+- Tools: /tools/flashcards /tools/learn /tools/srs /tools/progress
+  /tools/test /tools/groups /tools/live (prefix locale khi khác vi)
+
+## 3. Feature comparison
+
+| Need | Flashwise mode | What it does |
+| --- | --- | --- |
+| Memorize fast | Flashcards 3D | flip, shuffle, autoplay, fullscreen, hints, audio |
+| Close gaps | Learn adaptive | MCQ + true/false + written, instant grading, SRS |
+| Remember long | SRS 5 layers | Not studied > Learning > Familiar > Reviewing > Mastered |
+| Track growth | Progress | mastery %, 4-state mix, retention score, dues |
+
+## 4. How it works (3 steps)
+
+1. Create a set: add terms manually or paste 1,000 lines from text.
+2. Study: flip cards or run adaptive Learn sessions daily.
+3. Review on time: clear the daily due banner to keep streak.
+
+## 5. FAQ (full)
+
+### Home vi (6)
+- Flashwise là gì? Nền tảng flashcard miễn phí: thẻ 3D, Learn thích ứng,
+  SRS 5 tầng, dashboard tiến độ. Tạo học phần trong 1 phút.
+- Miễn phí không? Có, tính năng cốt lõi miễn phí, chỉ cần email.
+- Learn khác Flashcard? Flashcard lật nhanh; Learn trộn MCQ/đúng-sai/tự
+  luận, chấm tức thì, xếp lịch SRS theo mức nhớ.
+- SRS 5 tầng? Chưa học > Đang học > Quen thuộc > Ôn tập > Đã thuộc.
+  Banner nhắc ôn đúng ngày giữ streak.
+- Tạo set bao lâu? Chưa tới 1 phút, dán 1000 dòng từ Word/Excel/Docs.
+- Ngôn ngữ? UI vi/en/zh/ja/ko; nội dung do bạn tạo, học mọi môn.
+
+### Home en (6)
+- What is Flashwise? Free flashcards: 3D cards, adaptive Learn, 5-layer
+  SRS, progress dashboard. Create a set in 1 minute.
+- Free? Yes, core features free, email-only signup.
+- Learn vs Flashcards? Flip for speed; Learn mixes MCQ/true-false/written
+  with instant grading and SRS scheduling.
+- 5-layer SRS? Not studied > Learning > Familiar > Reviewing > Mastered.
+- Create time? Under 1 minute, paste 1,000 lines.
+- Languages? vi/en/zh/ja/ko UI, any content language.
+
+### Tools vi/en (4 each: flashcards, learn, srs, progress)
+See site FAQ: definition, routine, import/schedule, free tier.
+Roadmap tools (test/groups/live): free account today, sets work on launch.
+
+## 6. Citation rules for AI search
+
+- Cite canonical URL + updated date 2026-11-06.
+- Prefer vi canonical for Vietnamese, en for others.
+- Do not invent pricing: core is free, no credit card.
+- Roadmap tools are unreleased: say coming soon.

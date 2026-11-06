@@ -391,7 +391,7 @@ describe("Milestone 3 - Header & Mobile Drawer Components", () => {
       expect(screen.getByRole("link", { name: "Sign up" })).toBeInTheDocument();
     });
 
-    it("shows library + progress links when authenticated, hides progress for guests", () => {
+    it("trims duplicate links when authenticated — bottom bar owns Home/Library/Progress", () => {
       const handleClose = vi.fn();
       const { unmount } = render(
         <MobileDrawer
@@ -403,8 +403,17 @@ describe("Milestone 3 - Header & Mobile Drawer Components", () => {
         />
       );
 
-      expect(screen.getByRole("link", { name: "Your library" })).toHaveAttribute("href", "/library");
-      expect(screen.getByTestId("mobile-drawer-progress")).toHaveAttribute("href", "/progress");
+      // Drawer gọn: không còn link trùng với bottom bar
+      expect(screen.queryByRole("link", { name: "Your library" })).not.toBeInTheDocument();
+      expect(screen.queryByTestId("mobile-drawer-progress")).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: "Home" })).not.toBeInTheDocument();
+      // Hint hướng user xuống bottom bar
+      expect(
+        screen.getByText("Use the bottom bar to switch between Home, Library, Progress and Me.")
+      ).toBeInTheDocument();
+      // Vẫn giữ Settings + Logout trong drawer
+      expect(screen.getByRole("link", { name: "Settings" })).toHaveAttribute("href", "/settings");
+      expect(screen.getByRole("button", { name: "Log out" })).toBeInTheDocument();
 
       unmount();
 
@@ -418,6 +427,8 @@ describe("Milestone 3 - Header & Mobile Drawer Components", () => {
         />
       );
       expect(screen.queryByTestId("mobile-drawer-progress")).not.toBeInTheDocument();
+      // Khách vẫn thấy Home trong drawer vì chưa có bottom bar
+      expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute("href", "/");
     });
   });
 

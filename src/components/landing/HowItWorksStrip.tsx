@@ -39,7 +39,7 @@ export function HowItWorksStrip() {
             >
               <span
                 aria-hidden="true"
-                className="absolute -right-2 -top-4 text-7xl font-extrabold text-quizlet-canvas select-none"
+                className="absolute right-4 top-0 text-8xl font-extrabold text-quizlet-canvas select-none"
               >
                 {idx + 1}
               </span>

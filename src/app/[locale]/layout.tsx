@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
@@ -9,6 +10,16 @@ import { PWAInstallMount } from "@/components/pwa/PWAInstallMount";
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const { homeMetadata } = await import("@/lib/seo/metadata");
+  return homeMetadata(hasLocale(routing.locales, locale) ? locale : routing.defaultLocale);
 }
 
 interface LocaleLayoutProps {

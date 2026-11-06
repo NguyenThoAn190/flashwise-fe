@@ -9,6 +9,7 @@ import { Input, Button } from "@/components/ui";
 import { useAuth } from "@/lib/context/AuthContext";
 import { AuthErrorAlert } from "./AuthErrorAlert";
 import { GoogleLoginButton } from "./GoogleLoginButton";
+import { GoogleOneTap } from "./GoogleOneTap";
 import {
   validateSignupForm,
   SignupFormErrors,
@@ -114,6 +115,15 @@ export function SignupForm({ redirectParam }: SignupFormProps) {
 
       {/* Google Social Signup */}
       <div className="space-y-5">
+        {/* One Tap kiểu Canva: chỉ prompt khi chưa login, fail thì im lặng */}
+        {!isAuthenticated && !isAuthLoading && (
+          <GoogleOneTap
+            redirectParam={redirectParam}
+            onError={() => {
+              // One Tap bị dismiss/chặn: không hiện lỗi, giữ nút to làm fallback.
+            }}
+          />
+        )}
         <GoogleLoginButton
           text="signup_with"
           onSuccess={() => {

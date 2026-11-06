@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Search, Plus, ArrowRight, Play } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { trackEvent } from "@/components/seo/AnalyticsScripts";
 
 export function LandingHero() {
   const t = useTranslations("landing");
@@ -15,6 +16,7 @@ export function LandingHero() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = query.trim();
+    trackEvent("landing_search", { query: trimmed });
     if (trimmed) {
       router.push(`/signup?search=${encodeURIComponent(trimmed)}`);
     } else {
@@ -80,6 +82,7 @@ export function LandingHero() {
             <Link
               href="/set/create"
               data-testid="landing-create-btn"
+              onClick={() => trackEvent("create_set_click", { source: "landing_hero" })}
               className="inline-flex items-center justify-center select-none font-semibold transition-all duration-200 outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] px-4 py-2.5 text-sm rounded-xl gap-2 bg-white text-quizlet-slate border-2 border-quizlet-border hover:bg-quizlet-canvas hover:border-quizlet-border-hover active:bg-quizlet-border-light focus-visible:ring-quizlet-border-hover"
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
@@ -88,6 +91,7 @@ export function LandingHero() {
             <Link
               href="/signup"
               data-testid="landing-explore-btn"
+              onClick={() => trackEvent("sign_up_click", { source: "landing_hero" })}
               className="inline-flex items-center justify-center select-none font-semibold transition-all duration-200 outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] px-4 py-2.5 text-sm rounded-xl gap-2 bg-transparent text-white hover:bg-white/10 border border-white/30"
             >
               {t("exploreDashboard")}

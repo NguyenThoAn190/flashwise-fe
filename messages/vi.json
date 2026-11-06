@@ -68,7 +68,14 @@
     "toolsGroupsDesc": "Học cùng nhóm, chia sẻ học phần",
     "toolsLive": "Live",
     "toolsLiveDesc": "Lớp học trực tiếp với giáo viên",
-    "comingSoon": "Sắp có"
+    "comingSoon": "Sắp có",
+    "bottomHome": "Trang chủ",
+    "bottomLibrary": "Thư viện",
+    "bottomCreate": "Tạo",
+    "bottomProgress": "Tiến độ",
+    "bottomProfile": "Tôi",
+    "bottomBarAria": "Điều hướng chính trên di động",
+    "drawerBottomHint": "Dùng thanh điều hướng dưới để chuyển giữa Trang chủ, Thư viện, Tiến độ và Tôi."
   },
   "auth": {
     "loginTab": "Đăng nhập",

@@ -68,7 +68,14 @@
     "toolsGroupsDesc": "仲間と学び、セットを共有",
     "toolsLive": "ライブ",
     "toolsLiveDesc": "先生とのライブ授業",
-    "comingSoon": "近日公開"
+    "comingSoon": "近日公開",
+    "bottomHome": "ホーム",
+    "bottomLibrary": "ライブラリ",
+    "bottomCreate": "作成",
+    "bottomProgress": "進捗",
+    "bottomProfile": "自分",
+    "bottomBarAria": "モバイルのメインナビゲーション",
+    "drawerBottomHint": "ホーム・ライブラリ・進捗・自分は下のバーで切り替えます。"
   },
   "auth": {
     "loginTab": "ログイン",

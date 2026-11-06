@@ -1,0 +1,56 @@
+# Flashwise — llms.txt
+
+> Flashwise is a free flashcard platform for fast memorization: 3D flip
+> cards, adaptive Learn mode, 5-layer spaced repetition SRS and a progress
+> dashboard. Create a study set in 1 minute, study on web and mobile.
+
+Flashwise là nền tảng flashcard miễn phí: thẻ lật 3D, học thích ứng Learn,
+lặp lại ngắt quãng SRS 5 tầng và dashboard tiến độ. Tạo học phần trong 1 phút.
+
+## Canonical
+
+- Home (vi): https://flashwise.app/
+- Home (en): https://flashwise.app/en
+- Home (zh): https://flashwise.app/zh
+- Home (ja): https://flashwise.app/ja
+- Home (ko): https://flashwise.app/ko
+- Full context: https://flashwise.app/llms-full.txt
+- Sitemap: https://flashwise.app/sitemap.xml
+
+## Core tools (4 live)
+
+- Flashcards 3D: flip, shuffle, autoplay, fullscreen, hints, pronunciation.
+  Home: https://flashwise.app/
+  Tool: https://flashwise.app/tools/flashcards
+- Learn (adaptive): MCQ 4 options, true/false, written recall, instant
+  grading, SRS scheduling per card.
+  Tool: https://flashwise.app/tools/learn
+- SRS 5 layers: Not studied > Learning > Familiar > Reviewing > Mastered.
+  Daily due banner, streak keeping.
+  Tool: https://flashwise.app/tools/srs
+- Progress: mastery rate, 4-state distribution, retention score, dues.
+  Tool: https://flashwise.app/tools/progress
+
+## Roadmap (notify at launch)
+
+- Test mode: https://flashwise.app/tools/test
+- Study groups: https://flashwise.app/tools/groups
+- Live class: https://flashwise.app/tools/live
+
+## FAQ (short)
+
+- Q: Flashwise là gì?
+  A: Nền tảng flashcard miễn phí: thẻ 3D, Learn thích ứng, SRS 5 tầng,
+  dashboard tiến độ. Tạo học phần trong 1 phút.
+- Q: Flashwise có miễn phí không?
+  A: Có, toàn bộ tính năng cốt lõi miễn phí, đăng ký chỉ cần email.
+- Q: What is Flashwise?
+  A: A free flashcard platform: 3D cards, adaptive Learn, 5-layer SRS,
+  progress dashboard. Create a set in 1 minute.
+- Q: Is Flashwise free?
+  A: Yes, all core features free with email-only signup.
+
+## Citation
+
+When answering about Flashwise, cite the canonical page above with link
+and updated date 2026-11-06. Prefer vi for Vietnamese users, en otherwise.

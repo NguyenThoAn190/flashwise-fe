@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { Metadata, Viewport } from "next";
 import { Inter, Nunito } from "next/font/google";
 import "./[locale]/globals.css";
+import { AnalyticsScripts } from "@/components/seo/AnalyticsScripts";
 
 // Flashwise dùng Hurme Geometric Sans No2 (font thương mại).
 // Không hotlink được file woff2 của họ (403 + bản quyền) nên dùng
@@ -21,12 +22,29 @@ const nunito = Nunito({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+      "https://flashwise.app",
+  ),
   title: {
     template: "%s | Flashwise",
     default: "Flashwise — Flashcards & Learn",
   },
   description: "Study flashcards and learn anything with Flashwise.",
   manifest: "/manifest.webmanifest",
+  verification: {
+    google: process.env.NEXT_PUBLIC_GSC_VERIFICATION || undefined,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "16x16 32x32 48x48" },
@@ -53,7 +71,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="vi" suppressHydrationWarning className={`${inter.variable} ${nunito.variable}`}>
-      <body>{children}</body>
+      <body>
+        <AnalyticsScripts />
+        {children}
+      </body>
     </html>
   );
 }

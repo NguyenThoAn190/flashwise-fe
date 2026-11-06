@@ -16,6 +16,9 @@ export interface StartSessionOptions {
   mode?: StudyMode;
   direction?: StudyDirection;
   target_card_count?: number;
+  // Học theo chặng nhỏ: 0 = tự động, 8/12/15 = ép kích thước cụm.
+  chunk_size?: number;
+  chunk_index?: number;
 }
 
 export interface StudySessionInfo {
@@ -26,6 +29,9 @@ export interface StudySessionInfo {
   status: "in_progress" | "completed" | "abandoned";
   total_cards: number;
   current_index: number;
+  chunk_size?: number;
+  active_chunk?: number;
+  total_chunks?: number;
 }
 
 export interface SessionSummaryData {
@@ -52,6 +58,12 @@ export interface AdaptiveQuestion {
   card_index: number;
   total_cards: number;
   is_completed?: false;
+  // Học theo chặng nhỏ.
+  active_chunk?: number;
+  total_chunks?: number;
+  chunk_size?: number;
+  is_review_card?: boolean;
+  chunk_gate_passed?: boolean;
 }
 
 export interface CompletedSessionNextResponse {
@@ -147,6 +159,8 @@ export async function apiStartSession(
       mode: options.mode || "learn",
       direction: options.direction || "term_first",
       target_card_count: options.target_card_count,
+      chunk_size: options.chunk_size ?? 0,
+      chunk_index: options.chunk_index ?? 0,
     }
   );
 
@@ -164,6 +178,9 @@ export async function apiStartSession(
         ? s.target_card_count
         : 0,
     current_index: typeof s.current_index === "number" ? s.current_index : 0,
+    chunk_size: typeof s.chunk_size === "number" ? s.chunk_size : undefined,
+    active_chunk: typeof s.active_chunk === "number" ? s.active_chunk : undefined,
+    total_chunks: typeof s.total_chunks === "number" ? s.total_chunks : undefined,
   };
 }
 
@@ -233,6 +250,11 @@ export async function apiGetNextQuestion(
     card_index: typeof q.card_index === "number" ? q.card_index : 0,
     total_cards: typeof q.total_cards === "number" ? q.total_cards : 1,
     is_completed: false,
+    active_chunk: typeof q.active_chunk === "number" ? q.active_chunk : undefined,
+    total_chunks: typeof q.total_chunks === "number" ? q.total_chunks : undefined,
+    chunk_size: typeof q.chunk_size === "number" ? q.chunk_size : undefined,
+    is_review_card: Boolean(q.is_review_card ?? q.isReviewCard ?? false),
+    chunk_gate_passed: Boolean(q.chunk_gate_passed ?? q.chunkGatePassed ?? false),
   };
 }
 

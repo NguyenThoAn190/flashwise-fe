@@ -68,7 +68,14 @@
     "toolsGroupsDesc": "Learn together, share sets",
     "toolsLive": "Live",
     "toolsLiveDesc": "Live class with your teacher",
-    "comingSoon": "Soon"
+    "comingSoon": "Soon",
+    "bottomHome": "Home",
+    "bottomLibrary": "Library",
+    "bottomCreate": "Create",
+    "bottomProgress": "Progress",
+    "bottomProfile": "Me",
+    "bottomBarAria": "Primary mobile navigation",
+    "drawerBottomHint": "Use the bottom bar to switch between Home, Library, Progress and Me."
   },
   "auth": {
     "loginTab": "Log in",

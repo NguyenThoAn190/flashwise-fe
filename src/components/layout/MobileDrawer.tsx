@@ -13,8 +13,6 @@ import {
   Search,
   Plus,
   Home,
-  BookOpen,
-  BarChart3,
   Sparkles,
   Settings,
   LogOut,
@@ -204,8 +202,11 @@ export function MobileDrawer({
           </Button>
           )}
 
-          {/* Navigation Items: Công cụ học chỉ hiện khi chưa đăng nhập */}
+          {/* Navigation Items: khi đã đăng nhập thì bottom bar lo Home/Library/Progress,
+              drawer chỉ giữ phụ: tìm kiếm + công cụ public + cài đặt. */}
           <nav className="flex flex-col gap-1 py-2 text-sm font-semibold text-quizlet-slate">
+            {!user ? (
+              <>
             <Link
               href="/"
               onClick={onClose}
@@ -214,9 +215,6 @@ export function MobileDrawer({
               <Home className="w-4 h-4 text-quizlet-slate-secondary" />
               <span>{t("home")}</span>
             </Link>
-
-            {!user ? (
-              <>
             <p className="px-3 pt-2 pb-1 text-xs font-bold uppercase tracking-wider text-quizlet-slate-muted">
               {t("forStudents")}
             </p>
@@ -290,30 +288,11 @@ export function MobileDrawer({
               </span>
             </Link>
               </>
-            ) : null}
-
-            {/* Thư viện + Tiến độ chỉ hiện khi đã đăng nhập */}
-            {user ? (
-              <>
-                <Link
-                  href="/library"
-                  onClick={onClose}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-quizlet-canvas hover:text-quizlet-indigo transition-colors"
-                >
-                  <BookOpen className="w-4 h-4 text-quizlet-slate-secondary" />
-                  <span>{t("library")}</span>
-                </Link>
-                <Link
-                  href="/progress"
-                  onClick={onClose}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-quizlet-canvas hover:text-quizlet-indigo transition-colors"
-                  data-testid="mobile-drawer-progress"
-                >
-                  <BarChart3 className="w-4 h-4 text-quizlet-indigo" />
-                  <span>{t("progress")}</span>
-                </Link>
-              </>
-            ) : null}
+            ) : (
+              <p className="px-3 py-2 text-xs text-quizlet-slate-muted">
+                {t("drawerBottomHint")}
+              </p>
+            )}
           </nav>
 
           {/* Language Switcher — bản list cho mobile */}
