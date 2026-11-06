@@ -467,7 +467,11 @@ export default function LearnSessionPage() {
             {question.question_type === "true_false" && (
               <TrueFalseQuestion
                 prompt={question.prompt}
-                proposedDefinition={question.proposed_definition || ""}
+                proposedDefinition={
+                  question.proposed_definition ||
+                  question.expected_answer ||
+                  ""
+                }
                 disabled={Boolean(feedback) || isSubmitting}
                 selectedChoice={
                   feedback ? submittedDisplay === "True" : null
@@ -495,7 +499,9 @@ export default function LearnSessionPage() {
             {question.question_type === "recall" && (
               <FlashcardRecallQuestion
                 prompt={question.prompt}
-                expectedAnswer={question.expected_answer || ""}
+                expectedAnswer={
+                  question.expected_answer || question.prompt || ""
+                }
                 disabled={Boolean(feedback) || isSubmitting}
                 onSelfEvaluate={(remembered) =>
                   handleAnswer(

@@ -231,21 +231,35 @@ export async function apiGetNextQuestion(
   }
 
   const q = rawRes?.question || rawRes || {};
+  // Gateway serialize proto enum ra JSON dạng SỐ (encoding/json trên struct
+  // protobuf), không phải chuỗi. Nếu chỉ so sánh chuỗi thì mọi câu true_false /
+  // written / recall sẽ bị hiểu nhầm thành mcq -> hiện ra câu hỏi trống không
+  // có đáp án. Vì vậy phải xử lý cả dạng số lẫn dạng chuỗi.
+  const rawType = q.question_type;
+  const numericType =
+    typeof rawType === "number"
+      ? rawType
+      : typeof rawType === "string" && /^\d+$/.test(rawType)
+      ? Number(rawType)
+      : undefined;
   let qType: AdaptiveQuestionType = "mcq";
   if (
-    q.question_type === "true_false" ||
-    q.question_type === "QUESTION_TYPE_TRUE_FALSE"
+    rawType === "true_false" ||
+    rawType === "QUESTION_TYPE_TRUE_FALSE" ||
+    numericType === 2
   ) {
     qType = "true_false";
   } else if (
-    q.question_type === "written" ||
-    q.question_type === "QUESTION_TYPE_WRITTEN"
+    rawType === "written" ||
+    rawType === "QUESTION_TYPE_WRITTEN" ||
+    numericType === 4
   ) {
     qType = "written";
   } else if (
-    q.question_type === "recall" ||
-    q.question_type === "flashcard_recall" ||
-    q.question_type === "QUESTION_TYPE_FLASHCARD_RECALL"
+    rawType === "recall" ||
+    rawType === "flashcard_recall" ||
+    rawType === "QUESTION_TYPE_FLASHCARD_RECALL" ||
+    numericType === 3
   ) {
     qType = "recall";
   }
@@ -261,9 +275,15 @@ export async function apiGetNextQuestion(
     prompt: String(q.prompt || ""),
     options: Array.isArray(q.options) ? q.options : undefined,
     correct_index: typeof q.correct_index === "number" ? q.correct_index : undefined,
-    proposed_definition: q.proposed_definition,
-    is_true: typeof q.is_true === "boolean" ? q.is_true : undefined,
-    expected_answer: q.expected_answer,
+    proposed_definition:
+      q.proposed_definition ?? q.proposedDefinition ?? undefined,
+    is_true:
+      typeof q.is_true === "boolean"
+        ? q.is_true
+        : typeof q.isTrue === "boolean"
+        ? q.isTrue
+        : undefined,
+    expected_answer: q.expected_answer ?? q.expectedAnswer ?? undefined,
     card_index: typeof q.card_index === "number" ? q.card_index : 0,
     total_cards: typeof q.total_cards === "number" ? q.total_cards : 1,
     is_completed: false,
@@ -337,7 +357,6 @@ export async function apiSubmitAnswer(
       response_time_ms: payload.response_time_ms ?? 1500,
     }
   );
-
   return {
     is_correct: Boolean(rawRes?.is_correct),
     correct_answer: String(rawRes?.correct_answer || ""),

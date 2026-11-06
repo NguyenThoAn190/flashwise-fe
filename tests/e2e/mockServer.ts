@@ -1058,6 +1058,7 @@ export class MockApiGatewayServer {
           prompt: card.front_content,
           options,
           correct_index: correctIndex,
+          expected_answer: card.back_content,
           card_index: qIndex,
           total_cards: session.total_cards,
         };
@@ -1075,6 +1076,7 @@ export class MockApiGatewayServer {
           prompt: card.front_content,
           proposed_definition: proposed,
           is_true: isTrue,
+          expected_answer: isTrue ? "True" : "False",
           card_index: qIndex,
           total_cards: session.total_cards,
         };
